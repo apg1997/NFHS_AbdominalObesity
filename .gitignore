@@ -1,4 +1,20 @@
+# Ignore everything
+*
+
+# Git and Gitignore
+!.gitignore
+
+# Don't ignore directories
+!*/
+
+# Don't ignore .Rmd files anywhere
+!**/*.Rmd
+!**/*.md
+
+# R script files
+!**/*.R
+
+# R Project files
+!**/*.Rproj
+
 .Rproj.user
-.Rhistory
-.RData
-.Ruserdata
