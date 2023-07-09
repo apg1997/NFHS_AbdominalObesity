@@ -17,8 +17,8 @@ pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openx
 
 ```{r}
 # ### UNCOMMENT AND RUN FOLLOWING CODE FIRST TIME running the code
-# NFHS5_PR <- read.dta("Data/IAPR7DFL.DTA",convert.factors = TRUE)
-# export(NFHS5_PR,here("~/NFHS_AbdominalObesity/Data/NFHS/NFHS5_PR.RData"))
+
+
 
 # Load Data:
 load("~/NFHS5-NTBPS//Data/NFHS/NFHS5_PR.RData")
@@ -34,23 +34,26 @@ NFHS5_PR$wt <- NFHS5_PR$hv005 / 1000000
 
 #plots histogram by waist circumference 
 
-plot_histogram(NFHS5_PR$sh305) ## Significant portion of outliers > 900 cm waist circumference
+plot_histogram(NFHS5_PR$hv105) ## Significant portion of outliers > 900 cm waist circumference
 
 ```
 ```{r}
 library(naniar)
 
-plot_missing(data.frame(sh305 = NFHS5_PR$sh305))
+plot_missing(data.frame(sh305 = NFHS5_PR$hc))
 ```
 
 
 
 ```{r}
 NFHS5_PR <- NFHS5_PR %>%
-  mutate(wtcircum_obese = if_else(sh305 > 90, 1, 0))
+  mutate(wtcircum_obese = if_else((hv104 == "female" & sh305 > 80) | (hv104 == "male" & sh305 > 94), 1, 0))
 
 ```
 
+```{r}
+temp_NFHS_PR <- NFHS5_PR %>% filter()
+```
 
 
 ```{r}
@@ -68,12 +71,33 @@ histogram_data <- svyhist(~ sh305, design = NFHS5_design)
 
 ```{r}
 #Abdominal Obesity by Gender
-prop_abcircum_obese <- svyby(~wtcircum_obese, ~hc27, NFHS5_design, svymean, prop = "weights",na.rm = TRUE,multicore = TRUE,vartype = c("se", "ci"))
+prop_abcircum_obese <- svyby(~wtcircum_obese, ~hv104, NFHS5_design, svymean, prop = "weights",na.rm = TRUE,multicore = TRUE,vartype = c("se", "ci"))
 
 ```
 
 ```{r}
 #Percentage Prevalence by Gender
-prop_abcircum_obese <- prop_abcircum_obese %>% mutate_all(~.* 100)
+perc_abcircum_obese <- prop_abcircum_obese %>% mutate_all(~.* 100)
+```
+```{r}
+
+filtered_data <- NFHS5_PR %>%
+  filter(hv105 >= 15 & hv105 <= 49, !is.na(sh305))
+```
+
+```{r}
+filtered_design <- svydesign(id = filtered_data$hv021, 
+                          strata = filtered_data$hv023, 
+                          weights = filtered_data$wt, 
+                          data = filtered_data, 
+                          nest = TRUE)
+
+```
+
+
+```{r}
+filter_prop_abcircum_obese <- svyby(~wtcircum_obese, ~hv104, filtered_design, svymean, prop = "weights",na.rm = TRUE,multicore = TRUE,vartype = c("se", "ci"))
+
+
 ```
 
