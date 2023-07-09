@@ -37,7 +37,9 @@ NFHS5_PR$wt <- NFHS5_PR$hv005 / 1000000
 
 plot_histogram(data = NFHS5_PR$sh305) ## Significant portion of outliers > 900 cm waist circumference
 
-
+NFHS5_PR %>% 
+  ggplot(aes(sh305))+
+  geom_boxplot()
 ```
 
 ```{r}
