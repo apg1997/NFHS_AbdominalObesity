@@ -80,6 +80,20 @@ prop_abcircum_obese <- svyby(~wtcircum_obese, ~hv104, NFHS5_design, svymean, pro
 perc_abcircum_obese <- prop_abcircum_obese %>% mutate_all(~.* 100)
 ```
 ```{r}
+perc_abcircum_obese
+```
+
+```{r}
+tabyl(NFHS5_PR,hv104,wtcircum_obese,show_na = TRUE,addmargins=TRUE)
+
+```
+```{r}
+table_with_totals <- addmargins(table(NFHS5_PR$hv104, NFHS5_PR$wtcircum_obese, useNA = "always"), margin = 1, FUN = list(Total = sum))
+table_with_totals
+```
+
+
+```{r}
 
 filtered_data <- NFHS5_PR %>%
   filter(hv105 >= 15 & hv105 <= 49, !is.na(sh305))
@@ -99,5 +113,13 @@ filtered_design <- svydesign(id = filtered_data$hv021,
 filter_prop_abcircum_obese <- svyby(~wtcircum_obese, ~hv104, filtered_design, svymean, prop = "weights",na.rm = TRUE,multicore = TRUE,vartype = c("se", "ci"))
 
 
+```
+
+```{r}
+filter_prop_abcircum_obese
+```
+
+```{r}
+tabyl(filtered_data,hv104,wtcircum_obese,show_na = TRUE)
 ```
 
