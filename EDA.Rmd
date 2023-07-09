@@ -12,19 +12,23 @@ pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
 pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx,DataExplorer)
 ```
 
+
+
+
 ```{r}
-#### UNCOMMENT AND RUN FOLLOWING CODE FIRST TIME running the code 
-# NFHS5_PR <- read_dta("IAPR7DFL.DTA")
-# export(NFHS5_PR,here("~/NFHS5-NTBPS/Data/NFHS/NFHS5_PR.RData"))
+# ### UNCOMMENT AND RUN FOLLOWING CODE FIRST TIME running the code
+# NFHS5_PR <- read.dta("Data/IAPR7DFL.DTA",convert.factors = TRUE)
+# export(NFHS5_PR,here("~/NFHS_AbdominalObesity/Data/NFHS/NFHS5_PR.RData"))
 
 # Load Data:
 
-load("~/NFHS5-NTBPS/Data/NFHS/NFHS5_PR.RData")
+load("~/NFHS_AbdominalObesity//Data/NFHS/NFHS5_PR.RData")
 NFHS5_PR <- x
 ```
 
 
 ```{r}
+
 
 # Calculate Weight:
 NFHS5_PR$wt <- NFHS5_PR$hv005 / 1000000
