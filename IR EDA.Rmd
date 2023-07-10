@@ -1,0 +1,134 @@
+---
+title: "Exploratory Data Analysis"
+author: "Arkaprabha Gun, Tushar Garg"
+date: "`r Sys.Date()`"
+---
+
+```{r}
+library(pacman)
+pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
+       haven, dplyr, ggplot2, labelled, rmarkdown, readxl, naniar,
+       ggiraph, xlsx, stringdist, foreign, here, janitor)
+pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx,DataExplorer)
+```
+
+
+
+
+```{r}
+# ### UNCOMMENT AND RUN FOLLOWING CODE FIRST TIME running the code
+
+NFHS_IR <- read.dta("Data/IAIR7EFL.DTA",convert.factors = TRUE)
+save(NFHS_IR,file = "Data/NFHS_IR.RData")
+# # Load Data:
+# load("~/NFHS5-NTBPS//Data/NFHS/NFHS_IR.RData")
+# NFHS_IR <- x
+```
+```{r}
+# Set the seed for replicability
+set.seed(123)
+
+# Sample 5% of the dataframe
+sampled_df <- NFHS_IR %>% filter(!is.na(s305))%>% sample_frac(0.05)
+
+# Print the sampled dataframe
+print(sampled_df)
+```
+
+
+```{r}
+
+
+# Calculate Weight:
+sampled_df$wt <- sampled_df$v005/ 1000000
+
+
+#plots histogram by waist circumference 
+
+plot_histogram(sampled_df$s305) ## Significant portion of outliers > 900 cm waist circumference
+
+```
+
+```{r}
+library(naniar)
+
+plot_missing(data.frame(s305 = sampled_df$s305))
+```
+
+
+
+```{r}
+sampled_df <- sampled_df %>%
+  mutate(wtcircum_obese = if_else((s305> 80), 1, 0))
+
+```
+
+
+
+```{r}
+#Specifying Complex Survey Design (with 2-stage sampling)
+NFHS5_design <- svydesign(id = sampled_df$v021, strata = sampled_df$v023, weights = sampled_df$wt, data = sampled_df, nest = TRUE)
+options(survey.lonely.psu = "adjust")
+
+
+```
+
+```{r}
+histogram_data <- svyhist(~ s305, design = NFHS5_design)
+
+```
+
+```{r}
+#Abdominal Obesity by Gender
+prop_abcircum_obese <- svyby(~wtcircum_obese, ~v025, NFHS5_design, svymean, prop = "weights",na.rm = TRUE,multicore = TRUE,vartype = c("se", "ci"))
+
+```
+
+```{r}
+#Percentage Prevalence by Gender
+perc_abcircum_obese <- prop_abcircum_obese %>% mutate_all(~.* 100)
+```
+```{r}
+perc_abcircum_obese
+```
+
+```{r}
+tabyl(sampled_df,hv104,wtcircum_obese,show_na = TRUE,addmargins=TRUE)
+
+```
+```{r}
+table_with_totals <- addmargins(table(sampled_df$hv104, sampled_df$wtcircum_obese, useNA = "always"), margin = 1, FUN = list(Total = sum))
+table_with_totals
+```
+
+
+```{r}
+
+filtered_data <- sampled_df %>%
+  filter(hv105 >= 15 & hv105 <= 49, !is.na(sh305))
+```
+
+```{r}
+filtered_design <- svydesign(id = filtered_data$hv021, 
+                          strata = filtered_data$hv023, 
+                          weights = filtered_data$wt, 
+                          data = filtered_data, 
+                          nest = TRUE)
+
+```
+
+
+```{r}
+filter_prop_abcircum_obese <- svyby(~wtcircum_obese, ~hv104, filtered_design, svymean, prop = "weights",na.rm = TRUE,multicore = TRUE,vartype = c("se", "ci"))
+
+
+```
+
+```{r}
+filter_prop_abcircum_obese
+```
+
+```{r}
+tabyl(filtered_data,hv104,wtcircum_obese,show_na = TRUE)
+```
+
