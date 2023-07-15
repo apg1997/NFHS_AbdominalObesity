@@ -4,26 +4,24 @@ author: "Arkaprabha Gun, Tushar Garg"
 date: "`r Sys.Date()`"
 ---
 
-```{r}
-library(pacman)
-pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
-       haven, dplyr, ggplot2, labelled, rmarkdown, readxl, naniar,
-       ggiraph, xlsx, stringdist, foreign, here, janitor)
-pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx,DataExplorer)
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=F,message=F, warning=F)
+suppressMessages(if (!require("pacman")) install.packages("pacman"))
+pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,foreign)
 ```
-
-
 
 
 ```{r}
 # ### UNCOMMENT AND RUN FOLLOWING CODE FIRST TIME running the code
 
-NFHS_IR <- read.dta("Data/IAIR7EFL.DTA",convert.factors = TRUE)
-save(NFHS_IR,file = "Data/NFHS_IR.RData")
-# # Load Data:
-# load("~/NFHS5-NTBPS//Data/NFHS/NFHS_IR.RData")
-# NFHS_IR <- x
+# NFHS_IR <- read.dta("Data/IAIR7EFL.DTA",convert.factors = TRUE)
+# save(NFHS_IR,file = "Data/NFHS_IR.RData")
+
+# Load Data:
+load(here("Data_clean","NFHS_IR.RData"))
 ```
+
 ```{r}
 # Set the seed for replicability
 set.seed(123)
