@@ -1,0 +1,229 @@
+---
+title: "Obesity amongst women, NFHS5"
+author: "Arkaprabha Gun, Tushar Garg"
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=F,message=F, warning=F)
+suppressMessages(if (!require("pacman")) install.packages("pacman"))
+pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled)
+```
+
+```{r import, include=F}
+# importing individual recode (IR)
+import_women <- haven::read_dta(here("Data_raw","IAIR7EDT","IAIR7EFL.DTA"), 
+                     col_select = c(v005,v021,v023,v024,sdist,v012,v025,v106,v130,s116,v190,s731g,v213,v208,b19_01,v445,v437,v438,s305))
+
+dict_import_women <- labelled::generate_dictionary(import_women)
+
+# excluding women who were pregnant, within 2-months post-partum, or less than 18 years of age
+women <- import_women %>% 
+  # excluding women who are pregnant or who gave birth in the 2 months preceding the date of the interview (v213 ≠ 1 and (v208 = 0 or b19_01 >= 2)), logic from DHS repo for women: https://github.com/DHSProgram/DHS-Indicators-R/blob/main/Chap11_NT/NT_WM_NUT.R
+  # tested `age of child` script in DHS repo with v008, b3_01 -- no difference for this code
+  filter(v213==0 & (v208==0 | b19_01>=2)) %>% 
+  select(-c(v213,v208,b19_01)) %>% #variables not needed anymore
+  # excluding  women less than 18 years
+  filter(v012 >= 18) %>% 
+   # height and weight - recoding refusal, not present, other to NA
+  mutate(across(c(v437, v438), ~replace(., . %in% c(9994,9995,9996), NA))) %>% 
+  # BMI - 9998 flagged cases to NA
+  mutate(v445 = na_if(v445, 9998)) %>% 
+  # waist circumference - 999.5 and 999.6 to NA
+  mutate(s305 = replace(s305, s305 %in% c(999.5,999.6), NA)) %>% 
+  # filtering where (height and weight) or BMI is not available
+  filter(!((is.na(v437)|is.na(v438))&is.na(v445))) %>% 
+  # filtering NA in waist circumference
+  filter(!is.na(s305)) %>% 
+  
+  # salvaging missing BMI using height and weight to calculate BMI
+  mutate(v445 = if_else(is.na(v445),(v437/(v438/100)^2),v445)) %>% 
+    # invalid BMI values to NA per the DHS manual (v445<1200 | v445>6000)
+  mutate(v445 = if_else(v445 < 1200 | v445 > 6000, NA_real_, v445)) %>% 
+  #  #height & weight has one decimal and BMI has two in the dataset
+  mutate(across(c(v437, v438), ~./10),
+         v445 = v445/100) %>%
+  # filtering NA in BMI
+  filter(!is.na(v445)) %>% 
+  
+  # renaming and setting variable labels
+  rename(women_sample_weight = v005,
+         age = v012,
+         state = v024,
+         residence = v025,
+         education = v106,
+         religion = v130,
+         wealth = v190,
+         weight_kg = v437,
+         height_cm = v438,
+         bmi = v445,
+         district = sdist,
+         caste = s116,
+         meat = s731g,
+         waist_cm = s305) %>%
+  
+  # creating age categories
+  mutate(age_category = cut(age, 
+                            breaks = c(17, 29, 39, 49), 
+                            labels = c("18-29", "30-39", "40-49"))) %>% 
+  # defining obesity as per waist circumference and BMI criteria 
+  # Women: WC ≥80 cm, BMI ≥25 (ref: The Asia-Pacific perspective : redefining obesity and its treatment,2000)
+  mutate(obese_wtcircum = factor(if_else((waist_cm >= 80), "Obese", "Non-obese"),
+                                levels = c("Obese","Non-obese")),
+         obese_bmi = factor(if_else((bmi >= 25), "Obese", "Non-obese"),
+                                levels = c("Obese","Non-obese"))) %>% 
+  
+  dplyr::select(-c(height_cm,weight_kg,waist_cm))
+
+
+dict_women <- labelled::generate_dictionary(women)
+
+# haven and sjlabelled labelling function to be used later. Integrate with the women code above.
+women_original <- women
+
+women <- women_original %>% 
+  mutate(across(where(haven::is.labelled), haven::as_factor)) %>%
+  # sjlabelled::label_to_colnames() %>%
+  # haven::zap_label() %>%
+  haven::zap_formats() 
+
+# capitalizing values of factor variables
+women <- women %>%
+  mutate(across(where(is.factor), ~factor(str_to_sentence(as.character(.))))) %>% 
+  mutate(meat = fct_relevel(meat, c("Never", "Occasionally","Weekly","Daily")),
+         residence = fct_relevel(residence, c("Rural","Urban")),
+         education = fct_relevel(education, c("No education","Primary","Secondary","Higher")),
+         wealth = fct_relevel(wealth, c("Poorest","Poorer","Middle","Richer","Richest"))
+         ) %>% 
+  mutate(religion = fct_relevel(fct_recode(religion, "Buddhist" = "Buddhist / neo-buddhist", "Parsi" = "Parsi / zoroastrian"), 
+                            c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Parsi","Jewish","Other","No religion")),
+         
+         caste = fct_relevel(fct_recode(caste, "Other backward class" = "Obc"), 
+                            c("Schedule caste","Schedule tribe","Other backward class","Don't know","None of them" )),
+         ) %>% 
+  
+  labelled::set_variable_labels(women_sample_weight = "Women's Sample Weight",
+                                age = "Age in years",
+                                age_category = "Age category",
+                                state = "State",
+                                residence = "Type of Residence",
+                                education = "Highest Education Level",
+                                religion = "Religion",
+                                wealth = "Wealth Index",
+                                bmi = "Body Mass Index",
+                                district = "District",
+                                caste = "Caste",
+                                meat = "Frequency of Eating Meat",
+                                obese_wtcircum = "Obesity WC",
+                                obese_bmi = "Obesity BMI") 
+
+```
+
+```{r flowchart}
+temp <- import_women
+
+# Create a list of transformation functions
+transformations <- list(
+  "Step 1 - Excluding pregnant or recently given birth women" = 
+    function(data) {filter(data, v213==0 & (v208==0 | b19_01>=2))},
+  
+  "Step 2 - Excluding women less than 18 years" = 
+    function(data) {filter(data, v012 >= 18)},
+  
+  "Step 3 - Height and weight recoding" = 
+    function(data) {mutate(data, across(c(v437, v438), ~replace(., . %in% c(9995, 9996, 9994), NA)))},
+  
+  "Step 4 - BMI recoding" = 
+    function(data) {mutate(data, v445 = na_if(v445, 9998))},
+  
+  "Step 5 - Waist circumference recoding" = 
+    function(data) {mutate(data, s305 = replace(s305, s305 %in% c(999.5, 999.6), NA))},
+  
+  "Step 6 - Filtering where (height and weight) or BMI is not available" = 
+    function(data) {filter(data, !((is.na(v437)|is.na(v438))&is.na(v445)))},
+  
+  "Step 7 - Filtering NA in waist circumference" = 
+    function(data) {filter(data, !is.na(s305))},
+  
+   "Step 8 - Salvaging missing BMI using height and weight" = 
+    function(data) {dplyr::mutate(data, v445 = dplyr::if_else(is.na(v445), round(v437 / (v438 / 100) ^ 2, 2), v445))},
+  
+  "Step 9 - Invalid BMI values to NA per the DHS manual" = 
+    function(data) {dplyr::mutate(data, v445 = dplyr::if_else(v445 < 1200 | v445 > 6000, NA, v445))},
+  
+  "Step 10 - Filtering NA in BMI" = 
+    function(data) {filter(data, !is.na(v445))}
+)
+
+# Initialize a tibble to store row count after each step
+row_counts <- tibble(Step = character(), Rows = integer()) %>% 
+  # Add a row with the initial number of rows in 'women'
+  add_row(., Step = "Initial number of rows", Rows = nrow(temp))
+
+# Apply each transformation and save the row count
+for (i in names(transformations)) {
+  temp <- transformations[[i]](temp)
+  row_counts <- add_row(row_counts, Step = i, Rows = nrow(temp))
+}
+
+# Add a column with the difference in row count between steps
+row_counts <- row_counts %>%
+  mutate(Difference = Rows - lag(Rows, default = first(Rows)))
+
+rm(list = c("temp", "i", "transformations"))
+```
+
+```{r ease of setup+testing}
+# The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
+# As a result, the 'women' dataset is now a smaller, more manageable dataset
+set.seed(226) 
+women <- women %>% sample_frac(0.01)
+```
+
+```{r survey design}
+# Calculate Weight:
+women$wt <- women$women_sample_weight / 1000000
+
+#Specifying Complex Survey Design (with 2-stage sampling)
+NFHS5_design <- svydesign(id = women$v021, strata = women$v023, weights = women$wt, data = women, nest = TRUE)
+options(survey.lonely.psu = "adjust")
+```
+
+```{r descriptive summary}
+theme_gtsummary_journal("lancet")
+
+tbl_svysummary(NFHS5_design, 
+               include = c(obese_wtcircum,obese_bmi),
+               digits = list(all_categorical() ~ c(0,1))) %>% 
+  add_ci(style_fun = everything() ~ purrr::partial(style_number, scale = 100, digits = 1))
+
+tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
+               include = c(age_category,residence,education,religion,wealth,caste,meat),
+               statistic = list(all_categorical() ~ "{p}% ({n})"),
+               missing_text = "NA",
+               percent = "row") %>% 
+  add_ci(pattern = "{stat} [{ci}]",
+         #for religion, try "svyprop.logit" when using full data
+         method = religion ~ "svyprop.beta") %>% 
+  add_overall(last = TRUE,
+              statistic = ~"{n}")
+```
+
+```{r fitting model}
+svyglm(obese_wtcircum ~ age_category+residence+education+religion+wealth+caste+meat, design=NFHS5_design, data = women, family = binomial()) %>% 
+  tbl_regression(exponentiate = T)
+
+# fit tbl_uvregression
+# use easystats for checking performance, check multicollinearity
+
+```
+
+```{r}
+# histogram_data <- svyhist(~ waist_cm, design = NFHS5_design)
+# 
+# #Abdominal Obesity by residence
+# prop_abcircum_obese <- svyby(~obese_wtcircum, ~residence, NFHS5_design, svymean, prop = "weights", na.rm = TRUE, multicore = TRUE, vartype = c("se", "ci")) %>% 
+#    mutate_all(~.* 100)
+```
+
