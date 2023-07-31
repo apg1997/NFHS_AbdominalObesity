@@ -22,7 +22,6 @@ pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openx
 # save(NFHS_IR,file = "Data/NFHS_IR.RData")
 # Load Data:
 load("~/NFHS_AbdominalObesity/Data/NFHS_IR.RData")
-NFHS_IR <- x
 ```
 
 #Using the 5 % Subsample
