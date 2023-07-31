@@ -13,7 +13,7 @@ pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,label
 
 ```{r import, include=F}
 # importing individual recode (IR)
-import_women <- haven::read_dta(here("Data_raw","IAIR7EDT","IAIR7EFL.DTA"), 
+import_women <- haven::read_dta(here("Data_raw","IAIR7EFL.DTA"), 
                      col_select = c(v005,v021,v023,v024,sdist,v012,v025,v106,v130,s116,v190,s731g,v213,v208,b19_01,v445,v437,v438,s305))
 
 dict_import_women <- labelled::generate_dictionary(import_women)
@@ -175,10 +175,10 @@ rm(list = c("temp", "i", "transformations"))
 ```
 
 ```{r ease of setup+testing}
-# The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
-# As a result, the 'women' dataset is now a smaller, more manageable dataset
-set.seed(226) 
-women <- women %>% sample_frac(0.01)
+# # The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
+# # As a result, the 'women' dataset is now a smaller, more manageable dataset
+# set.seed(226) 
+# women <- women %>% sample_frac(0.01)
 ```
 
 ```{r survey design}
