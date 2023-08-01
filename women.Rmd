@@ -13,7 +13,7 @@ pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,label
 
 ```{r import, include=F}
 # importing individual recode (IR)
-import_women <- haven::read_dta(here("Data_raw","IAIR7EFL.DTA"), 
+import_women <- haven::read_dta(here("Data_raw","IAIR7EFL","IAIR7EFL.DTA"), 
                      col_select = c(v005,v021,v023,v024,sdist,v012,v025,v106,v130,s116,v190,s731g,v213,v208,b19_01,v445,v437,v438,s305))
 
 dict_import_women <- labelled::generate_dictionary(import_women)
