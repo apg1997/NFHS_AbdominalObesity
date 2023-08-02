@@ -8,39 +8,36 @@ date: "`r Sys.Date()`"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled)
+pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools)
 ```
 
-```{r}
+```{r import, include=F}
 # importing individual recode (MR)
-import_men <- haven::read_dta(here("Data_raw","IAMR7EFL","IAMR7EFL.DTA"), 
-                     col_select = c(mv001,mv002,mv003, mv005, mv024, smdist, mv012, mv025, mv106, mv130, sm118, mv190, sm630g, smb305,mv021,mv023))
-import_men_household <- haven::read_dta(here("Data_raw","IAPR7DFL.DTA"), 
-                     col_select = c(hv001, hv002, hvidx, hb40, hb2, hb3 ))
+import_men <- haven::read_dta(here("Data_raw","IAMR7EDT","IAMR7EFL.DTA"), 
+                              col_select = c(mv001,mv002,mv003, mv005, mv024, smdist, mv012, mv025, mv106, mv130, sm118, mv190, sm630g, smb305,mv021,mv023))
 
-```
+# importing household recode (PR)
+import_men_household <- haven::read_dta(here("Data_raw","IAPR7EDT","IAPR7EFL.DTA"), 
+                                        col_select = c(hv001, hv002, hvidx, hb40, hb2, hb3))
 
-```{r}
-# rename IDs
+# rename variables in PR
 import_men_household <- import_men_household %>%
   mutate(mv001=hv001) %>%
   mutate(mv002=hv002) %>%
   mutate(mv003=hvidx) 
 
+# pulling data from PR into MR
 import_men <- merge(import_men,import_men_household,by=c("mv001", "mv002", "mv003"))
 
-```
-
-```{r import, include=F}
+rm(import_men_household)
 
 dict_import_men <- labelled::generate_dictionary(import_men)
 
-# excluding men who were pregnant, within 2-months post-partum, or less than 18 years of age
+# excluding men less than 18 years of age and missing values
 men <- import_men %>% 
-  # excluding men who are pregnant or who gave birth in the 2 months preceding the date of the interview (v213 ≠ 1 and (v208 = 0 or b19_01 >= 2)), logic from DHS repo for men: https://github.com/DHSProgram/DHS-Indicators-R/blob/main/Chap11_NT/NT_WM_NUT.R
   # excluding  men less than 18 years
   filter(mv012 >= 18) %>% 
-   # height and weight - recoding refusal, not present, other to NA
+  # height and weight - recoding refusal, not present, other to NA
   mutate(across(c(hb2, hb3), ~replace(., . %in% c(9994,9995,9996), NA))) %>% 
   # BMI - 9998 flagged cases to NA
   mutate(hb40 = na_if(hb40, 9998)) %>% 
@@ -53,7 +50,7 @@ men <- import_men %>%
   
   # salvaging missing BMI using height and weight to calculate BMI
   mutate(hb40 = if_else(is.na(hb40),(hb2/(hb3/100)^2),hb40)) %>% 
-    # invalid BMI values to NA per the DHS manual (hb40<1200 | hb40>6000)
+  # invalid BMI values to NA per the DHS manual (hb40<1200 | hb40>6000)
   mutate(hb40 = if_else(hb40 < 1200 | hb40 > 6000, NA_real_, hb40)) %>% 
   #  #height & weight has one decimal and BMI has two in the dataset
   mutate(across(c(hb2, hb3), ~./10),
@@ -79,14 +76,14 @@ men <- import_men %>%
   
   # creating age categories
   mutate(age_category = cut(age, 
-                            breaks = c(17, 29, 39, 49), 
-                            labels = c("18-29", "30-39", "40-49"))) %>% 
+                            breaks = c(17, 29, 39, 49, 54), 
+                            labels = c("18-29", "30-39", "40-49", "50-54"))) %>% 
   # defining obesity as per waist circumference and BMI criteria 
-  # men: WC ≥80 cm, BMI ≥25 (ref: The Asia-Pacific perspective : redefining obesity and its treatment,2000)
+  # men: WC ≥90 cm, BMI ≥25 (ref: The Asia-Pacific perspective : redefining obesity and its treatment,2000)
   mutate(obese_wtcircum = factor(if_else((waist_cm >= 90), "Obese", "Non-obese"),
-                                levels = c("Obese","Non-obese")),
+                                 levels = c("Obese","Non-obese")),
          obese_bmi = factor(if_else((bmi >= 25), "Obese", "Non-obese"),
-                                levels = c("Obese","Non-obese"))) %>% 
+                            levels = c("Obese","Non-obese"))) %>% 
   
   dplyr::select(-c(height_cm,weight_kg,waist_cm))
 
@@ -105,17 +102,17 @@ men <- men_original %>%
 # capitalizing values of factor variables
 men <- men %>%
   mutate(across(where(is.factor), ~factor(str_to_sentence(as.character(.))))) %>% 
-  mutate(meat = fct_relevel(meat, c("Never", "Occasionally","Weekly","Daily")),
+  mutate(meat = fct_relevel(meat, c("Never","Daily","Occasionally","Weekly")),
          residence = fct_relevel(residence, c("Rural","Urban")),
          education = fct_relevel(education, c("No education","Primary","Secondary","Higher")),
          wealth = fct_relevel(wealth, c("Poorest","Poorer","Middle","Richer","Richest"))
-         ) %>% 
+  ) %>% 
   mutate(religion = fct_relevel(fct_recode(religion, "Buddhist" = "Buddhist / neo-buddhist", "Parsi" = "Parsi / zoroastrian"), 
-                            c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Parsi","Jewish","Other","No religion")),
+                                c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Parsi","Jewish","Other","No religion")),
          
          caste = fct_relevel(fct_recode(caste, "Other backward class" = "Obc"), 
-                            c("Schedule caste","Schedule tribe","Other backward class","Don't know","None of them" )),
-         ) %>% 
+                             c("Schedule caste","Schedule tribe","Other backward class","Don't know","None of them" )),
+  ) %>% 
   
   labelled::set_variable_labels(men_sample_weight = "men's Sample Weight",
                                 age = "Age in years",
@@ -188,7 +185,7 @@ rm(list = c("temp", "i", "transformations"))
 ```{r ease of setup+testing}
 # # The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
 # # As a result, the 'men' dataset is now a smaller, more manageable dataset
-# set.seed(226) 
+# set.seed(226)
 # men <- men %>% sample_frac(0.01)
 ```
 
@@ -222,19 +219,74 @@ tbl_svysummary(NFHS5_design, by = obese_wtcircum,
 ```
 
 ```{r fitting model}
-svyglm(obese_wtcircum ~ age_category+residence+education+religion+wealth+caste+meat, design=NFHS5_design, data = men, family = binomial()) %>% 
-  tbl_regression(exponentiate = T)
+men %>%
+  select(obese_wtcircum,age_category,residence,education,religion,wealth,caste,meat) %>%
+  tbl_uvregression(method = svyglm,
+                   y = obese_wtcircum,
+                   method.args = list(design=NFHS5_design, family = binomial()),
+                   exponentiate = TRUE,
+                   pvalue_fun = ~ style_pvalue(.x, digits = 2)
+  )
 
-# fit tbl_uvregression
-# use easystats for checking performance, check multicollinearity
+m1 <- svyglm(obese_wtcircum ~ age_category+residence+education+religion+wealth+caste+meat, design=NFHS5_design, data = men, family = binomial())
 
-```
-
-```{r}
-# histogram_data <- svyhist(~ waist_cm, design = NFHS5_design)
+# m1 %>% 
+#   model_performance()
 # 
-# #Abdominal Obesity by residence
-# prop_abcircum_obese <- svyby(~obese_wtcircum, ~residence, NFHS5_design, svymean, prop = "weights", na.rm = TRUE, multicore = TRUE, vartype = c("se", "ci")) %>% 
-#    mutate_all(~.* 100)
+# summ(m1, vifs = T)
+
+m1 %>% 
+  tbl_regression(exponentiate = T)
 ```
 
+```{r prevalence by state-district}
+# obesity prevalence disaggregated by state
+tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
+               include = c(state),
+               statistic = list(all_categorical() ~ "{p}% ({n})"),
+               missing_text = "NA",
+               percent = "row") %>% 
+  add_ci(pattern = "{stat} [{ci}]") %>% 
+  add_overall(last = TRUE,
+              statistic = ~"{n}")
+
+state_est <- svyby(~obese_wtcircum, ~state, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci")) %>%
+  select(!contains("Non-")) %>% 
+  rename(prev_obese = obese_wtcircumObese,
+         se_obese = se.obese_wtcircumObese,
+         ci_l_obese = ci_l.obese_wtcircumObese,
+         ci_u_obese = ci_u.obese_wtcircumObese) %>%
+  mutate(across(where(is.numeric), ~ round(.x * 100, 1)))
+
+state_count <- svyby(~obese_wtcircum, ~state, NFHS5_design, svytotal, keep.names = FALSE, na.rm = TRUE) %>% 
+  select(!starts_with("se.")) %>% 
+  mutate(n = round(rowSums(select(., `obese_wtcircumNon-obese`,`obese_wtcircumObese`), na.rm = TRUE),0)) %>% 
+  select(state,n)
+
+state <- merge(state_est, state_count, by = "state")
+
+# obesity prevalence disaggregated by district
+tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
+               include = c(state,district),
+               statistic = list(all_categorical() ~ "{p}% ({n})"),
+               missing_text = "NA",
+               percent = "row") %>% 
+  add_ci(pattern = "{stat} [{ci}]") %>% 
+  add_overall(last = TRUE,
+              statistic = ~"{n}")
+
+district_est <- svyby(~obese_wtcircum, ~state+district, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci")) %>%
+  select(!contains("Non-")) %>% 
+  rename(prev_obese = obese_wtcircumObese,
+         se_obese = se.obese_wtcircumObese,
+         ci_l_obese = ci_l.obese_wtcircumObese,
+         ci_u_obese = ci_u.obese_wtcircumObese) %>%
+  mutate(across(where(is.numeric), ~ round(.x * 100, 1)))
+
+district_count <- svyby(~obese_wtcircum, ~state+district, NFHS5_design, svytotal, keep.names = FALSE, na.rm = TRUE) %>% 
+  select(!starts_with("se.")) %>% 
+  mutate(n = round(rowSums(select(., `obese_wtcircumNon-obese`,`obese_wtcircumObese`), na.rm = TRUE),0)) %>% 
+  select(district,n)
+
+district <- merge(district_est, district_count, by = "district")
+```
