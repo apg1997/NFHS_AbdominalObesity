@@ -83,7 +83,7 @@ men <- import_men %>%
                             labels = c("18-29", "30-39", "40-49"))) %>% 
   # defining obesity as per waist circumference and BMI criteria 
   # men: WC ≥80 cm, BMI ≥25 (ref: The Asia-Pacific perspective : redefining obesity and its treatment,2000)
-  mutate(obese_wtcircum = factor(if_else((waist_cm >= 80), "Obese", "Non-obese"),
+  mutate(obese_wtcircum = factor(if_else((waist_cm >= 90), "Obese", "Non-obese"),
                                 levels = c("Obese","Non-obese")),
          obese_bmi = factor(if_else((bmi >= 25), "Obese", "Non-obese"),
                                 levels = c("Obese","Non-obese"))) %>% 
