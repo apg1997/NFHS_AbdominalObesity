@@ -276,7 +276,7 @@ tbl_svysummary(NFHS5_design, by = obese_wtcircum,
   add_overall(last = TRUE,
               statistic = ~"{n}")
 
-ddistrict_est <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci"), multicore = TRUE) %>%
+  district_est <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci"), multicore = TRUE) %>%
   select(!contains("Non-")) %>% 
   rename(prev_obese = obese_wtcircumObese,
          se_obese = se.obese_wtcircumObese,
