@@ -8,7 +8,7 @@ date: "`r Sys.Date()`"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools)
+pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools,xlsx)
 ```
 
 ```{r import, include=F}
@@ -298,3 +298,8 @@ district_est <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svymean, keep
 district <- merge(district_est, district_count, by = "district_id")
 final_district <- merge(district,district_details, by = "district_id") 
 ```
+
+```{r}
+write.xlsx(final_district,"men_dist_obesity_prev.xlsx")
+```
+
