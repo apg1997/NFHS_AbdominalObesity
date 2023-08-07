@@ -245,12 +245,12 @@ model_uv_wc_men <- men %>%
   select(obese_wtcircum,age_category,residence,education,religion,wealth,caste,meat) %>%
   tbl_uvregression(method = svyglm,
                    y = obese_wtcircum,
-                   method.args = list(design=NFHS5_design, family = binomial()),
+                   method.args = list(design=NFHS5_design, family = quasibinomial()),
                    exponentiate = TRUE,
                    pvalue_fun = ~ style_pvalue(.x, digits = 2))
 
 model_adj_wc_men <- svyglm(obese_wtcircum ~ age_category+residence+education+religion+wealth+caste+meat, 
-                           design=NFHS5_design, data = men, family = binomial())
+                           design=NFHS5_design, data = men, family = quasibinomial())
 
 # model_adj_wc_men %>% 
 #   model_performance()
