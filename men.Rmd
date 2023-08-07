@@ -257,13 +257,10 @@ model_adj_wc_men <- svyglm(obese_wtcircum ~ age_category+residence+education+rel
 # 
 # summ(model_adj_wc_men, vifs = T)
 
-model_uv_wc_men_est <- model_uv_wc_men %>% 
-  tbl_regression(exponentiate = T)
-
 model_adj_wc_men_est <- model_adj_wc_men %>% 
   tbl_regression(exponentiate = T)
 
-model_uv_wc_men_est
+model_uv_wc_men
 model_adj_wc_men_est
 ```
 
