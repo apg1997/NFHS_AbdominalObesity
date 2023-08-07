@@ -300,6 +300,12 @@ final_district <- merge(district,district_details, by = "district_id")
 ```
 
 ```{r}
+final_district <- final_district %>%
+  mutate(state = str_to_title(state),
+  district = str_to_title(district))
+```
+
+```{r}
 write.xlsx(final_district,"men_dist_obesity_prev.xlsx")
 ```
 
