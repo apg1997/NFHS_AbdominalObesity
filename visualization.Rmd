@@ -1,0 +1,17 @@
+---
+title: "Obesity amongst men, NFHS - 5"
+author: "Arkaprabha Gun, Tushar Garg"
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=F,message=F, warning=F)
+suppressMessages(if (!require("pacman")) install.packages("pacman"))
+pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools,xlsx)
+```
+
+```{r}
+
+```
+

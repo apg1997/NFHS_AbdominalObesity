@@ -13,11 +13,11 @@ pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,label
 
 ```{r import, include=F}
 # importing individual recode (MR)
-import_men <- haven::read_dta(here("Data_raw","IAMR7EFL","IAMR7EFL.DTA"), 
+import_men <- haven::read_dta(here("Data_raw","IAMR7EDT","IAMR7EFL.DTA"), 
                               col_select = c(mv001,mv002,mv003, mv005, mv024, smdist, mv012, mv025, mv106, mv130, sm118, mv190, sm630g, smb305,mv021,mv023))
 
 # importing household recode (PR)
-import_men_household <- haven::read_dta(here("Data_raw","IAPR7DFL","IAPR7DFL.DTA"), 
+import_men_household <- haven::read_dta(here("Data_raw","IAPR7EDT","IAPR7EFL.DTA"), 
                                         col_select = c(hv001, hv002, hvidx, hb40, hb2, hb3))
 
 # rename variables in PR
