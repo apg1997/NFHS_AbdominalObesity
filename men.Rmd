@@ -183,16 +183,16 @@ rm(list = c("temp", "i", "transformations"))
 ```
 
 ```{r ease of setup+testing}
-# The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
-# As a result, the 'men' dataset is now a smaller, more manageable dataset
-set.seed(226)
-men <- men %>% sample_frac(0.01)
+# # The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
+# # As a result, the 'men' dataset is now a smaller, more manageable dataset
+# set.seed(226)
+# men <- men %>% sample_frac(0.01)
 ```
 
 ```{r survey design}
 # Calculate Weight:
 men$wt <- men$men_sample_weight / 1000000
-men <- men <- men %>%
+men <- men %>%
   unite(district_id, state, district, sep = "_",remove = FALSE)
 #Specifying Complex Survey Design (with 2-stage sampling)
 NFHS5_design <- svydesign(id = men$mv021, strata = men$mv023, weights = men$wt, data = men, nest = TRUE)
