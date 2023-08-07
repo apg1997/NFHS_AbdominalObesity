@@ -129,6 +129,13 @@ men <- men %>%
                                 obese_wtcircum = "Obesity WC",
                                 obese_bmi = "Obesity BMI") 
 
+# creating a new unique district variable
+men <- men %>%
+  unite(district_id, state, district, sep = "_",remove = FALSE)
+
+# creating a reference table for state and district variables
+district_details <- men %>%
+  distinct(district_id, state, district)
 ```
 
 ```{r flowchart}
@@ -192,22 +199,11 @@ rm(list = c("temp", "i", "transformations"))
 ```{r survey design}
 # Calculate Weight:
 men$wt <- men$men_sample_weight / 1000000
-men <- men %>%
-  unite(district_id, state, district, sep = "_",remove = FALSE)
+
 #Specifying Complex Survey Design (with 2-stage sampling)
 NFHS5_design <- svydesign(id = men$mv021, strata = men$mv023, weights = men$wt, data = men, nest = TRUE)
 options(survey.lonely.psu = "adjust")
 ```
-
-
-
-```{r}
-district_details <- men %>%
-  distinct(district_id, state, district)
-
-
-```
-
 
 ```{r descriptive summary}
 theme_gtsummary_journal("lancet")
