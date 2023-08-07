@@ -118,6 +118,14 @@ women <- women %>%
                                 obese_wtcircum = "Obesity WC",
                                 obese_bmi = "Obesity BMI") 
 
+# creating a new unique district variable
+women <- women %>%
+  unite(district_id, state, district, sep = "_",remove = FALSE)
+
+# creating a reference table for state and district variables
+district_details <- women %>%
+  distinct(district_id, state, district)
+
 ```
 
 ```{r flowchart}
@@ -243,7 +251,7 @@ tbl_svysummary(NFHS5_design, by = obese_wtcircum,
   add_overall(last = TRUE,
               statistic = ~"{n}")
 
-state_est <- svyby(~obese_wtcircum, ~state, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci")) %>%
+state_est <- svyby(~obese_wtcircum, ~state, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci"), multicore = TRUE) %>%
   select(!contains("Non-")) %>% 
   rename(prev_obese = obese_wtcircumObese,
          se_obese = se.obese_wtcircumObese,
@@ -268,7 +276,7 @@ tbl_svysummary(NFHS5_design, by = obese_wtcircum,
   add_overall(last = TRUE,
               statistic = ~"{n}")
 
-district_est <- svyby(~obese_wtcircum, ~state+district, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci")) %>%
+ddistrict_est <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci"), multicore = TRUE) %>%
   select(!contains("Non-")) %>% 
   rename(prev_obese = obese_wtcircumObese,
          se_obese = se.obese_wtcircumObese,
@@ -276,11 +284,17 @@ district_est <- svyby(~obese_wtcircum, ~state+district, NFHS5_design, svymean, k
          ci_u_obese = ci_u.obese_wtcircumObese) %>%
   mutate(across(where(is.numeric), ~ round(.x * 100, 1)))
 
-district_count <- svyby(~obese_wtcircum, ~state+district, NFHS5_design, svytotal, keep.names = FALSE, na.rm = TRUE) %>% 
+  district_count <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svytotal, keep.names = FALSE, na.rm = TRUE,multicore = TRUE) %>% 
   select(!starts_with("se.")) %>% 
   mutate(n = round(rowSums(select(., `obese_wtcircumNon-obese`,`obese_wtcircumObese`), na.rm = TRUE),0)) %>% 
-  select(district,n)
+  select(district_id,n)
 
-district <- merge(district_est, district_count, by = "district")
+district <- merge(district_est, district_count, by = "district_id")
+final_district <- merge(district,district_details, by = "district_id") 
 ```
 
+
+```{r, exporting estimates for women}
+
+write.xlsx(final_district,"women_dist_obesity_prev.xlsx")
+```
