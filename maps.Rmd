@@ -24,7 +24,7 @@ merged_data <- merged_data %>%
     district = case_when(
       district == "North  & Middle Andaman" ~ "North & Middle Andaman",
       district == "Janjgir - Champa" ~ "Janjgir-Champa",
-      district == "Buxer" ~ "Buxar",
+      district == "Buxar" ~ "Buxer",
       district == "Leh(Ladakh)" ~ "Leh",
       district == "North  District" ~ "North District",
       district == "Mahrajganj" ~ "Maharajganj",
@@ -74,9 +74,10 @@ merged_data_with_shape_sf <- st_as_sf(merged_data_with_shape)
 menplot_districts <- ggplot() + 
   #geom_sf(data = underlay_map) +
   geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
-  theme_void() 
+  theme_void() +
+  scale_fill_viridis_c(direction = -1)
 
-ggsave("output_men.svg", plot = menplot, device = "svg", width = 10, height = 8, units = "in")
+ggsave("output_men.svg", plot = menplot_districts, device = "svg", width = 10, height = 8, units = "in")
 
 menplot_districts
 ```
@@ -93,7 +94,7 @@ states <- geojson_sf("geoBoundaries-IND-ADM1_simplified.geojson")
 # Plot the India state boundaries
 menplot_districts + 
   geom_sf(data = states, color = "black", fill = NA) +
-  theme_void()
+  theme_tufte()
 ```
 ```{r}
 states_centroids <- st_centroid(states)
@@ -102,5 +103,9 @@ ggplot(states) +
   geom_sf() +
   geom_sf_label(aes(label = shapeName), size = 3, nudge_y = 0.1) +
   theme_minimal()
+```
+
+```{r}
+setdiff(merged_data$district,merged_data_with_shape$district)
 ```
 
