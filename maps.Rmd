@@ -4,7 +4,7 @@ pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
        haven, dplyr, ggplot2, labelled, rmarkdown, readxl, naniar,
        ggiraph, xlsx, stringdist, foreign, here, janitor)
 pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx)
-p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom)
+p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom,scales,ggpattern)
 
 ```
 
@@ -72,14 +72,27 @@ merged_data_with_shape_sf <- st_as_sf(merged_data_with_shape)
 
 # Create the static map using ggplot2
 menplot_districts <- ggplot() + 
-  #geom_sf(data = underlay_map) +
+  geom_sf(data = underlay_map) +
   geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
   theme_void() +
-  scale_fill_viridis_c(direction = -1)
+  scale_fill_distiller(palette = "RdPu", direction = 1)
+menplot_districts
+
 
 ggsave("output_men.svg", plot = menplot_districts, device = "svg", width = 10, height = 8, units = "in")
 
+```
+```{r}
+p_load(ggforce)
+# Create the static map using ggplot2
+menplot_districts <- ggplot() + 
+  geom_sf_pattern(data = underlay_map, pattern = "stripe") +
+  geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
+  theme_void() +
+  scale_fill_distiller(palette = "RdPu", direction = 1) +
+  labs(fill = "(%) Percentage \n prevalence\n among men", title = "Abdominal Obesity among men (aged 18-49 years)")
 menplot_districts
+
 ```
 
 ```{r}
