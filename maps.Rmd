@@ -4,7 +4,7 @@ pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
        haven, dplyr, ggplot2, labelled, rmarkdown, readxl, naniar,
        ggiraph, xlsx, stringdist, foreign, here, janitor)
 pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx)
-p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom,scales,ggpattern)
+p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom,scales,ggpattern,maptools,htmlwidgets)
 
 ```
 
@@ -83,15 +83,43 @@ ggsave("output_men.svg", plot = menplot_districts, device = "svg", width = 10, h
 
 ```
 ```{r}
-p_load(ggforce)
-# Create the static map using ggplot2
-menplot_districts <- ggplot() + 
-  geom_sf_pattern(data = underlay_map, pattern = "stripe") +
-  geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
-  theme_void() +
-  scale_fill_distiller(palette = "RdPu", direction = 1) +
-  labs(fill = "(%) Percentage \n prevalence\n among men", title = "Abdominal Obesity among men (aged 18-49 years)")
-menplot_districts
+custom_palette <- colorNumeric(palette = as.character(wes_palette("Rushmore1",type = "continuous")), domain = merged_data_with_shape_sf$prev_obese_men,)
+
+# Create a leaflet map
+leaflet_map <- leaflet() %>%
+  addProviderTiles("Esri.WorldGrayCanvas") %>%  # Add a basemap
+  addPolygons(
+  data = underlay_map,
+  fill = TRUE,
+  fillColor = "grey",
+  fillOpacity = 1,
+  color = "black" ,           # Border color
+  popup = ~paste("No Data Available")
+) %>% 
+
+  # Add polygons layer with custom color and tooltip
+  addPolygons(data = merged_data_with_shape_sf,
+              fillColor = ~custom_palette(prev_obese_men),
+              fillOpacity = 1,
+              weight = 1,
+              color = "black",
+              popup = ~paste("District: ", district, "<br>Prevalence: ", prev_obese_men, "%")) %>% 
+  # Add a legend
+  addLegend(
+    position = "bottomright",
+    pal = custom_palette,
+    values = merged_data_with_shape_sf$prev_obese_men,
+    title = "Prevalence"
+  )
+  
+
+
+leaflet_map
+```
+
+
+```{r}
+saveWidget(leaflet_map, 'mapfrance.html', selfcontained = TRUE)
 
 ```
 
