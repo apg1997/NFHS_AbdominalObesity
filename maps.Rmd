@@ -87,15 +87,16 @@ custom_palette <- colorNumeric(palette = as.character(wes_palette("Rushmore1",ty
 
 # Create a leaflet map
 leaflet_map <- leaflet() %>%
-  addProviderTiles("Esri.WorldGrayCanvas") %>%  # Add a basemap
+  # addProviderTiles("Esri.WorldGrayCanvas") %>%  # Add a basemap
+    addProviderTiles(provider = providers$Stamen.Watercolor) %>%
+
   addPolygons(
   data = underlay_map,
   fill = TRUE,
   fillColor = "grey",
   fillOpacity = 1,
   color = "black" ,           # Border color
-  popup = ~paste("No Data Available")
-) %>% 
+  popup = ~paste("No Data Available")) %>% 
 
   # Add polygons layer with custom color and tooltip
   addPolygons(data = merged_data_with_shape_sf,
@@ -169,30 +170,43 @@ ggmap(stamen_map)# Create a ggplot object with the map background
 
 ```
 ```{r}
-# ggmap(stamen_map) +
-#   annotation_raster(stamen_map,
-#     xmin = map_extent[1], xmax = map_extent[3],
-#     ymin = map_extent[2], ymax = map_extent[4]
-#   ) +
-#   geom_sf(data = underlay_map, fill = "grey", color = "black") +
-#   geom_sf(
-#     data = merged_data_with_shape_sf,
-#     aes(fill = custom_palette(prev_obese_men)),
-#     color = "black",
-#     size = 1
-#   ) +
-#   scale_fill_manual(values = c("grey", custom_palette(100))) +
-#   labs(fill = "Prevalence") +
-#   theme_void() +
-#   theme(legend.position = "bottomright") +
-#   guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
-#   geom_sf_label(
-#     data = merged_data_with_shape_sf,
-#     aes(label = paste("District: ", district, "\nPrevalence: ", prev_obese_men, "%")),
-#     color = "black",
-#     size = 2,
-#     nudge_y = 0.01
-#   )
+stamen_map <- stamen_map %>% tidy()
+ggmap(stamen_map) +
+  annotation_raster(stamen_map,
+    xmin = map_extent[1], xmax = map_extent[3],
+    ymin = map_extent[2], ymax = map_extent[4]
+  ) +
+  geom_sf(data = underlay_map, fill = "grey", color = "black") +
+  geom_sf(
+    data = merged_data_with_shape_sf,
+    aes(fill = custom_palette(prev_obese_men)),
+    color = "black",
+    size = 1
+  ) +
+  scale_fill_manual(values = c("grey", custom_palette(100))) +
+  labs(fill = "Prevalence") +
+  theme_void() +
+  theme(legend.position = "bottomright") +
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  geom_sf_label(
+    data = merged_data_with_shape_sf,
+    aes(label = paste("District: ", district, "\nPrevalence: ", prev_obese_men, "%")),
+    color = "black",
+    size = 2,
+    nudge_y = 0.01
+  )
+```
+```{r}
+underlay_map <- underlay_map %>% fortify()
+
+ggmap(stamen_map) +
+  geom_sf(data = underlay_map, fill = "blue", alpha = 0.5)
+
+map <- ggmap(stamen_map)
+
+# Create a ggplot object with the map and the 'sf' data
+map_with_polygon <- map +
+  geom_sf(data = underlay_map, fill = "blue", alpha = 0.5)
 ```
 
 
