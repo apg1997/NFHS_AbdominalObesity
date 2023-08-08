@@ -116,12 +116,85 @@ leaflet_map <- leaflet() %>%
 
 leaflet_map
 ```
+```{r}
+library(ggplot2)
+library(sf)
+library(wesanderson)
+
+# Create a custom palette
+custom_palette <- colorNumeric(
+  palette = as.character(wes_palette("Rushmore1", type = "continuous")),
+  domain = merged_data_with_shape_sf$prev_obese_men
+)
+
+# Create a ggplot object
+ggplot() +
+  geom_sf(data = underlay_map, fill = "grey", color = "black") +
+  geom_sf(
+    data = merged_data_with_shape_sf,
+    aes(fill = custom_palette(prev_obese_men)),
+    color = "black",
+    size = 1
+  ) +
+  scale_fill_identity() +
+  labs(fill = "Prevalence") +
+  theme_minimal() +
+  theme(legend.position = "bottomright") +
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) 
+```
 
 
 ```{r}
 saveWidget(leaflet_map, 'mapfrance.html', selfcontained = TRUE)
 
 ```
+
+```{r}
+library(ggplot2)
+library(sf)
+library(wesanderson)
+p_load(ggmap)
+
+# Get map extent for setting the plot limits
+map_extent <- as.numeric(st_bbox(underlay_map))
+
+# Create a ggmap object with the background map
+stamen_map <- 
+  get_stamenmap(
+    bbox = c(map_extent[1], map_extent[2], map_extent[3], map_extent[4]),
+    zoom = 7,
+    maptype = "terrain"
+  )
+ggmap(stamen_map)# Create a ggplot object with the map background
+
+```
+```{r}
+# ggmap(stamen_map) +
+#   annotation_raster(stamen_map,
+#     xmin = map_extent[1], xmax = map_extent[3],
+#     ymin = map_extent[2], ymax = map_extent[4]
+#   ) +
+#   geom_sf(data = underlay_map, fill = "grey", color = "black") +
+#   geom_sf(
+#     data = merged_data_with_shape_sf,
+#     aes(fill = custom_palette(prev_obese_men)),
+#     color = "black",
+#     size = 1
+#   ) +
+#   scale_fill_manual(values = c("grey", custom_palette(100))) +
+#   labs(fill = "Prevalence") +
+#   theme_void() +
+#   theme(legend.position = "bottomright") +
+#   guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+#   geom_sf_label(
+#     data = merged_data_with_shape_sf,
+#     aes(label = paste("District: ", district, "\nPrevalence: ", prev_obese_men, "%")),
+#     color = "black",
+#     size = 2,
+#     nudge_y = 0.01
+#   )
+```
+
 
 ```{r}
 merged_data_with_shape_sf %>% group_by(state) %>% summarise() %>% plot()
