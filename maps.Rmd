@@ -3,8 +3,8 @@ library(pacman)
 pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
        haven, dplyr, ggplot2, labelled, rmarkdown, readxl, naniar,
        ggiraph, xlsx, stringdist, foreign, here, janitor)
-pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx)
-p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom,scales,ggpattern,maptools,htmlwidgets)
+pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx, mapview)
+p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom,scales,ggpattern,maptools,htmlwidgets,wesanderson)
 
 ```
 
@@ -64,24 +64,50 @@ merged_data_with_shape$district == "Y.S.R."
 ```{r}
 underlay_map <- st_read("india-composite.geojson")
 ```
+```{r}
+p_load(ggmap,maptiles,tidyterra)
+map_extent <- as.numeric(st_bbox(underlay_map))
+grid_box = c(map_extent[1], map_extent[2], map_extent[3], map_extent[4])
+class(grid_box) <- "bbox"
+grid_poly <- st_as_sfc(grid_box) %>% st_set_crs(4326) %>%
+  st_transform(3857)
+basemap <- get_tiles(grid_poly, provider = "Stamen.Watercolor", crop = TRUE)
+```
 
 
 ```{r}
 # Create an sf object with valid geometry
 merged_data_with_shape_sf <- st_as_sf(merged_data_with_shape)
 
+wes_palette <- c('#edf8b1','#7fcdbb','#2c7fb8')
+
+# Generate a sequence of colors by interpolating in the palette
+num_colors <- 100  # Number of colors in the gradient
+gradient_colors <- colorRampPalette(as.character(wes_palette("BottleRocket2", type = "continuous",n  = 2)))(2)
+gradient_colors <- colorRampPalette(as.character(wes_palette))(5)
+
 # Create the static map using ggplot2
 menplot_districts <- ggplot() + 
+  geom_spatraster_rgb(data = basemap) +
   geom_sf(data = underlay_map) +
   geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
-  theme_void() +
-  scale_fill_distiller(palette = "RdPu", direction = 1)
+  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
+  # scale_fill_fermenter(direction= +1, type = "seq")+
+    scale_fill_viridis_c( direction = -1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
+  # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
+  theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  labs(title = "Prevalence of Abdominal Obesity in Men by District",fill = "Prevalence in % age")
+
+
 menplot_districts
 
 
 ggsave("output_men.svg", plot = menplot_districts, device = "svg", width = 10, height = 8, units = "in")
 
 ```
+
+
+
 ```{r}
 custom_palette <- colorNumeric(palette = as.character(wes_palette("Rushmore1",type = "continuous")), domain = merged_data_with_shape_sf$prev_obese_men,)
 
@@ -117,6 +143,86 @@ leaflet_map <- leaflet() %>%
 
 leaflet_map
 ```
+```{r}
+mapshot(leaflet_map, file = "output_men.png",remove_controls = TRUE)
+
+```
+
+
+
+```{r}
+# Load the required packages
+p_load(tmap, RColorBrewer,tmaptools,OpenStreetMap )
+
+# Create a normal color palette
+custom_palette <- rev(brewer.pal(9, "YlOrRd"))  # Using a sequential color palette
+
+# Create a tmap
+tmap_map <- tm_basemap("Stamen.Watercolor") +
+  
+  # Add polygons layer with custom color and tooltip
+  tm_shape(merged_data_with_shape_sf) +
+  tm_polygons(
+    col = "prev_obese_men",
+    palette = custom_palette,
+    style = "cont",
+    border.col = "black",
+    lwd = 1,
+    title = "Prevalence",
+    legend.hist = TRUE,
+    legend.format = list(format = "f", digits = 1),
+    popup.vars = c("district", "prev_obese_men"),
+    popup.format = list(labels = c("District: ", "Prevalence: {level}%"))
+  ) +
+  
+  # Set the layout of the legend
+  tm_layout(legend.position = c("right", "bottom"))
+
+# Display the tmap
+tmap_map
+
+```
+```{r}
+c_osm <- tmaptools::read_osm(bb(merged_data_with_shape_sf), ext = 1.05)
+
+tmap_map <- tm_basemap("Stamen.Watercolor") +
+# 
+qtm(merged_data_with_shape_sf, fill = "prev_obese_men", basemaps = "Stamen.Watercolor")
+
+# tm_basemap(leaflet::providers$Stamen.Watercolor) +  
+  # Add polygons layer with custom color and tooltip
+  tm_shape(merged_data_with_shape_sf) +
+  tm_borders(lwd = 1, col = "black") +
+  tm_fill(
+    col = "prev_obese_men",
+    palette = custom_palette,
+    style = "cont",
+    title = "Prevalence",
+    legend.hist = FALSE,  # Disable histogram legend
+    legend.format = list(format = "f", digits = 1)
+  )
+  
+  tmap_map# Set the layout of the legend
+  # tm_layout(legend.position = c("center", "bottom"))
+
+# Display the tmap
+
+current.mode <- tmap_mode("view")
+
+
+tm_basemap(leaflet::providers$Stamen.Watercolor)
+
+tmap_save(tmap_map, filename = "map_output.svg", width = 8, height = 6, units = "in")
+
+# Convert tmap to leaflet
+leaflet_map <- tmap_leaflet(tmap_map)
+
+# Save the leaflet map as an HTML file
+saveWidget(leaflet_map, "map_output.html",selfcontained = )
+
+```
+
+
 ```{r}
 library(ggplot2)
 library(sf)
@@ -154,7 +260,8 @@ saveWidget(leaflet_map, 'mapfrance.html', selfcontained = TRUE)
 library(ggplot2)
 library(sf)
 library(wesanderson)
-p_load(ggmap)
+
+
 
 # Get map extent for setting the plot limits
 map_extent <- as.numeric(st_bbox(underlay_map))
