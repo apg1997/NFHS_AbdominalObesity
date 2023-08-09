@@ -186,7 +186,17 @@ for (i in names(transformations)) {
 row_counts <- row_counts %>%
   mutate(Difference = Rows - lag(Rows, default = first(Rows)))
 
-rm(list = c("temp", "i", "transformations"))
+# rm(list = c("temp", "i", "transformations"))
+men_row_counts <- row_counts
+new_row <- data.frame(
+  Step = "Final Mens Dataset",
+  Rows = tail(men_row_counts$Rows, 1),
+  Difference = 0
+)
+
+# Add the new row to the dataframe
+men_row_counts <- bind_rows(men_row_counts, new_row)
+
 ```
 
 ```{r ease of setup+testing}
