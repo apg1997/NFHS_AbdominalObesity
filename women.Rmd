@@ -183,7 +183,7 @@ women_row_counts <- row_counts
 
 new_row <- data.frame(
   Step = "Final Womens Dataset",
-  Rows = tail(men_row_counts$Rows, 1),
+  Rows = tail(women_row_counts$Rows, 1),
   Difference = 0
 )
 
