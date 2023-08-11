@@ -1,24 +1,48 @@
-```{r}
-library(pacman)
-pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
-       haven, dplyr, ggplot2, labelled, rmarkdown, readxl, naniar,
-       ggiraph, xlsx, stringdist, foreign, here, janitor)
-pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx, mapview)
-p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom,scales,ggpattern,maptools,htmlwidgets,wesanderson)
+---
+title: "Obesity amongst men, NFHS - 5, generate maps"
+author: "Arkaprabha Gun, Tushar Garg"
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=F,message=F, warning=F)
+suppressMessages(if (!require("pacman")) install.packages("pacman"))
+p_load(  "base", "broom", "dplyr", "geojsonio", "ggmap", "ggplot2", "ggthemes",
+  "grDevices", "htmlwidgets", "leaflet", "maptiles", "mapview",
+  "pacman", "RColorBrewer", "sf", "tidyterra", "tmap", "tmaptools",openxlsx,wesanderson)
 
 ```
 
+
+
 ```{r}
+# library(pacman)
+# pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
+#        haven, dplyr, ggplot2, labelled, rmarkdown, readxl, naniar,
+#        ggiraph, xlsx, stringdist, foreign, here, janitor)
+# pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx, mapview)
+# p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom,scales,ggpattern,maptools,htmlwidgets,wesanderson)
+# 
+# package_names <- c(
+#   "base", "broom", "dplyr", "geojsonio", "ggmap", "ggplot2", "ggthemes",
+#   "grDevices", "htmlwidgets", "leaflet", "maptiles", "mapview",
+#   "pacman", "RColorBrewer", "sf", "tidyterra", "tmap", "tmaptools"
+# )
+
+```
+
+```{r, loading district files}
 women <- read.xlsx("women_dist_obesity_prev.xlsx")
 men <- read.xlsx("men_dist_obesity_prev.xlsx")
 ```
 
 
-```{r}
+```{r, merging men and womens district level estimates}
 merged_data <- merge(men, women, by = c("district_id","state","district"), suffixes = c("_men", "_women"))
 ```
 
-```{r}
+```{r, cleaning district names to match with DHS shapefile}
 merged_data <- merged_data %>%
   mutate(
     district = case_when(
@@ -40,42 +64,39 @@ merged_data <- merged_data %>%
 ```
 
 
-```{r}
+```{r, loading dhs shapefile,include=FALSE}
 p_load(sf,dplyr,ggthemes)
 
 shapefile <- st_read("shps/sdr_subnational_boundaries2.shp")
 
 ```
 
-```{r}
+```{r, renaming district and state name in dhs shapefile}
 shapefile <- shapefile %>%
   rename(district = REGNAME, state = OTHREGNA)
 ```
 
-```{r}
+```{r, merging district shapefile with district-level estimates}
 merged_data_with_shape <- merge(merged_data, shapefile, by = c("district","state"))
 
 ```
 
-```{r}
-merged_data_with_shape$district == "Y.S.R."
-```
 
-```{r}
+```{r, loading in background map of India with correct geography, include=FALSE}
 underlay_map <- st_read("india-composite.geojson")
 ```
-```{r}
+```{r, manipulating shapefiles for concurrence}
 p_load(ggmap,maptiles,tidyterra)
 map_extent <- as.numeric(st_bbox(underlay_map))
 grid_box = c(map_extent[1], map_extent[2], map_extent[3], map_extent[4])
 class(grid_box) <- "bbox"
 grid_poly <- st_as_sfc(grid_box) %>% st_set_crs(4326) %>%
   st_transform(3857)
-basemap <- get_tiles(grid_poly, provider = "Stamen.Watercolor", crop = TRUE)
+# basemap <- get_tiles(grid_poly, provider = "Stamen.Watercolor", crop = TRUE)
 ```
 
 
-```{r}
+```{r, converting to sf object and plotting mens estimates choropleth}
 # Create an sf object with valid geometry
 merged_data_with_shape_sf <- st_as_sf(merged_data_with_shape)
 
@@ -88,12 +109,12 @@ gradient_colors <- colorRampPalette(as.character(wes_palette))(5)
 
 # Create the static map using ggplot2
 menplot_districts <- ggplot() + 
-  geom_spatraster_rgb(data = basemap) +
+  # geom_spatraster_rgb(data = basemap) +
   geom_sf(data = underlay_map) +
   geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
-  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
+  scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
   # scale_fill_fermenter(direction= +1, type = "seq")+
-    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
+    # scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
   # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
   theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
   labs(title = "Prevalence of Abdominal Obesity in Men by District",fill = "Prevalence in % age")
@@ -105,10 +126,10 @@ menplot_districts
 ggsave("output_men.svg", plot = menplot_districts, device = "svg", width = 10, height = 8, units = "in")
 
 ```
-```{r}
+```{r, plotting womens district level estimates}
 # Create the static map using ggplot2
 womenplot_districts <- ggplot() + 
-  geom_spatraster_rgb(data = basemap) +
+  # geom_spatraster_rgb(data = basemap) +
   geom_sf(data = underlay_map) +
   geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_women)) +
   # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_women)))+
@@ -127,8 +148,8 @@ ggsave("output_women.svg", plot = womenplot_districts, device = "svg", width = 1
 
 
 
-```{r}
-custom_palette <- colorNumeric(palette = as.character(wes_palette("Rushmore1",type = "continuous")), domain = merged_data_with_shape_sf$prev_obese_men,)
+```{r, plotting interactive dashboard for mens district level estimates}
+custom_palette <- colorNumeric(palette = as.character(wes_palette("Zissou1",type = "continuous")), domain = merged_data_with_shape_sf$prev_obese_men,)
 
 # Create a leaflet map
 leaflet_map <- leaflet() %>%
@@ -149,7 +170,7 @@ leaflet_map <- leaflet() %>%
               fillOpacity = 1,
               weight = 1,
               color = "black",
-              popup = ~paste("District: ", district, "<br>Prevalence: ", prev_obese_men, "%")) %>% 
+              popup = ~paste("State:" ,state, "District: ", district, "<br>Prevalence: ", prev_obese_men, "%" )) %>% 
   # Add a legend
   addLegend(
     position = "bottomright",
@@ -162,204 +183,21 @@ leaflet_map <- leaflet() %>%
 
 leaflet_map
 ```
-```{r}
-mapshot(leaflet_map, file = "output_men.png",remove_controls = TRUE)
-
-```
 
 
 
-```{r}
-# Load the required packages
-p_load(tmap, RColorBrewer,tmaptools,OpenStreetMap )
-
-# Create a normal color palette
-custom_palette <- rev(brewer.pal(9, "YlOrRd"))  # Using a sequential color palette
-
-# Create a tmap
-tmap_map <- tm_basemap("Stamen.Watercolor") +
-  
-  # Add polygons layer with custom color and tooltip
-  tm_shape(merged_data_with_shape_sf) +
-  tm_polygons(
-    col = "prev_obese_men",
-    palette = custom_palette,
-    style = "cont",
-    border.col = "black",
-    lwd = 1,
-    title = "Prevalence",
-    legend.hist = TRUE,
-    legend.format = list(format = "f", digits = 1),
-    popup.vars = c("district", "prev_obese_men"),
-    popup.format = list(labels = c("District: ", "Prevalence: {level}%"))
-  ) +
-  
-  # Set the layout of the legend
-  tm_layout(legend.position = c("right", "bottom"))
-
-# Display the tmap
-tmap_map
-
-```
-```{r}
-c_osm <- tmaptools::read_osm(bb(merged_data_with_shape_sf), ext = 1.05)
-
-tmap_map <- tm_basemap("Stamen.Watercolor") +
-# 
-qtm(merged_data_with_shape_sf, fill = "prev_obese_men", basemaps = "Stamen.Watercolor")
-
-# tm_basemap(leaflet::providers$Stamen.Watercolor) +  
-  # Add polygons layer with custom color and tooltip
-  tm_shape(merged_data_with_shape_sf) +
-  tm_borders(lwd = 1, col = "black") +
-  tm_fill(
-    col = "prev_obese_men",
-    palette = custom_palette,
-    style = "cont",
-    title = "Prevalence",
-    legend.hist = FALSE,  # Disable histogram legend
-    legend.format = list(format = "f", digits = 1)
-  )
-  
-  tmap_map# Set the layout of the legend
-  # tm_layout(legend.position = c("center", "bottom"))
-
-# Display the tmap
-
-current.mode <- tmap_mode("view")
 
 
-tm_basemap(leaflet::providers$Stamen.Watercolor)
-
-tmap_save(tmap_map, filename = "map_output.svg", width = 8, height = 6, units = "in")
-
-# Convert tmap to leaflet
-leaflet_map <- tmap_leaflet(tmap_map)
-
-# Save the leaflet map as an HTML file
-saveWidget(leaflet_map, "map_output.html",selfcontained = )
-
-```
-
-
-```{r}
-library(ggplot2)
-library(sf)
-library(wesanderson)
-
-# Create a custom palette
-custom_palette <- colorNumeric(
-  palette = as.character(wes_palette("Rushmore1", type = "continuous")),
-  domain = merged_data_with_shape_sf$prev_obese_men
-)
-
-# Create a ggplot object
-ggplot() +
-  geom_sf(data = underlay_map, fill = "grey", color = "black") +
-  geom_sf(
-    data = merged_data_with_shape_sf,
-    aes(fill = custom_palette(prev_obese_men)),
-    color = "black",
-    size = 1
-  ) +
-  scale_fill_identity() +
-  labs(fill = "Prevalence") +
-  theme_minimal() +
-  theme(legend.position = "bottomright") +
-  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) 
-```
-
-
-```{r}
-saveWidget(leaflet_map, 'mapfrance.html', selfcontained = TRUE)
-
-```
-
-```{r}
-library(ggplot2)
-library(sf)
-library(wesanderson)
-
-
-
-# Get map extent for setting the plot limits
-map_extent <- as.numeric(st_bbox(underlay_map))
-
-# Create a ggmap object with the background map
-stamen_map <- 
-  get_stamenmap(
-    bbox = c(map_extent[1], map_extent[2], map_extent[3], map_extent[4]),
-    zoom = 7,
-    maptype = "terrain"
-  )
-ggmap(stamen_map)# Create a ggplot object with the map background
-
-```
-```{r}
-stamen_map <- stamen_map %>% tidy()
-ggmap(stamen_map) +
-  annotation_raster(stamen_map,
-    xmin = map_extent[1], xmax = map_extent[3],
-    ymin = map_extent[2], ymax = map_extent[4]
-  ) +
-  geom_sf(data = underlay_map, fill = "grey", color = "black") +
-  geom_sf(
-    data = merged_data_with_shape_sf,
-    aes(fill = custom_palette(prev_obese_men)),
-    color = "black",
-    size = 1
-  ) +
-  scale_fill_manual(values = c("grey", custom_palette(100))) +
-  labs(fill = "Prevalence") +
-  theme_void() +
-  theme(legend.position = "bottomright") +
-  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
-  geom_sf_label(
-    data = merged_data_with_shape_sf,
-    aes(label = paste("District: ", district, "\nPrevalence: ", prev_obese_men, "%")),
-    color = "black",
-    size = 2,
-    nudge_y = 0.01
-  )
-```
-```{r}
-underlay_map <- underlay_map %>% fortify()
-
-ggmap(stamen_map) +
-  geom_sf(data = underlay_map, fill = "blue", alpha = 0.5)
-
-map <- ggmap(stamen_map)
-
-# Create a ggplot object with the map and the 'sf' data
-map_with_polygon <- map +
-  geom_sf(data = underlay_map, fill = "blue", alpha = 0.5)
-```
-
-
-```{r}
+```{r, collapsing geometries by state}
 merged_data_with_shape_sf %>% group_by(state) %>% summarise() %>% plot()
 
 ```
 
-```{r}
+```{r, overlaying stateshapefile over mens estimates}
 
 states <- geojson_sf("geoBoundaries-IND-ADM1_simplified.geojson")
 
 # Plot the India state boundaries
 menplot_districts + 
-  geom_sf(data = states, color = "black", fill = NA) +
-  theme_tufte()
+  geom_sf(data = states, color = "black", fill = NA) 
 ```
-```{r}
-states_centroids <- st_centroid(states)
-
-ggplot(states) +
-  geom_sf() +
-  geom_sf_label(aes(label = shapeName), size = 3, nudge_y = 0.1) +
-  theme_minimal()
-```
-
-```{r}
-setdiff(merged_data$district,merged_data_with_shape$district)
-```
-

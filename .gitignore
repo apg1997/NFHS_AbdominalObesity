@@ -17,4 +17,6 @@
 # R Project files
 !**/*.Rproj
 
-.Rproj.user
+!shapefiles/*.geojson
+
+!shapefiles/*.shp

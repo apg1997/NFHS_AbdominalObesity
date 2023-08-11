@@ -1,0 +1,354 @@
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+library(pacman)
+pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
+       haven, dplyr, ggplot2, labelled, rmarkdown, readxl, naniar,
+       ggiraph, xlsx, stringdist, foreign, here, janitor)
+pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx, mapview)
+p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom,scales,ggpattern,maptools,htmlwidgets,wesanderson)
+
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+women <- read.xlsx("women_dist_obesity_prev.xlsx")
+men <- read.xlsx("men_dist_obesity_prev.xlsx")
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+merged_data <- merge(men, women, by = c("district_id","state","district"), suffixes = c("_men", "_women"))
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+merged_data <- merged_data %>%
+  mutate(
+    district = case_when(
+      district == "North  & Middle Andaman" ~ "North & Middle Andaman",
+      district == "Janjgir - Champa" ~ "Janjgir-Champa",
+      district == "Buxar" ~ "Buxer",
+      district == "Leh(Ladakh)" ~ "Leh",
+      district == "North  District" ~ "North District",
+      district == "Mahrajganj" ~ "Maharajganj",
+      district == "Sant Ravidas Nagar (Bhadohi)" ~ "Sant Ravidas Nagar",
+      district == "Y.s.r." ~ "Y.S.R.",
+      TRUE ~ district  # Keep the original value for all other cases
+    ),
+    state = case_when(
+      state == "Dadra & Nagar Haveli And Daman & Diu" ~ "Dadra & Nagar Haveli & Daman & Diu",
+      TRUE ~ state  # Keep the original value for all other cases
+    )
+  )
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+p_load(sf,dplyr,ggthemes)
+
+shapefile <- st_read("shps/sdr_subnational_boundaries2.shp")
+
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+shapefile <- shapefile %>%
+  rename(district = REGNAME, state = OTHREGNA)
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+merged_data_with_shape <- merge(merged_data, shapefile, by = c("district","state"))
+
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+merged_data_with_shape$district == "Y.S.R."
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+underlay_map <- st_read("india-composite.geojson")
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+p_load(ggmap,maptiles,tidyterra)
+map_extent <- as.numeric(st_bbox(underlay_map))
+grid_box = c(map_extent[1], map_extent[2], map_extent[3], map_extent[4])
+class(grid_box) <- "bbox"
+grid_poly <- st_as_sfc(grid_box) %>% st_set_crs(4326) %>%
+  st_transform(3857)
+basemap <- get_tiles(grid_poly, provider = "Stamen.Watercolor", crop = TRUE)
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Create an sf object with valid geometry
+merged_data_with_shape_sf <- st_as_sf(merged_data_with_shape)
+
+wes_palette <- c('#edf8b1','#7fcdbb','#2c7fb8')
+
+# Generate a sequence of colors by interpolating in the palette
+num_colors <- 100  # Number of colors in the gradient
+gradient_colors <- colorRampPalette(as.character(wes_palette("BottleRocket2", type = "continuous",n  = 2)))(2)
+gradient_colors <- colorRampPalette(as.character(wes_palette))(5)
+
+# Create the static map using ggplot2
+menplot_districts <- ggplot() + 
+  geom_spatraster_rgb(data = basemap) +
+  geom_sf(data = underlay_map) +
+  geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
+  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
+  # scale_fill_fermenter(direction= +1, type = "seq")+
+    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
+  # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
+  theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  labs(title = "Prevalence of Abdominal Obesity in Men by District",fill = "Prevalence in % age")
+
+
+menplot_districts
+
+
+ggsave("output_men.svg", plot = menplot_districts, device = "svg", width = 10, height = 8, units = "in")
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Create the static map using ggplot2
+womenplot_districts <- ggplot() + 
+  geom_spatraster_rgb(data = basemap) +
+  geom_sf(data = underlay_map) +
+  geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_women)) +
+  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_women)))+
+  # scale_fill_ferwomenter(direction= +1, type = "seq")+
+    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
+  # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
+  theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  labs(title = "Prevalence of Abdominal Obesity in women by District",fill = "Prevalence in % age")
+
+
+womenplot_districts
+
+
+ggsave("output_women.svg", plot = womenplot_districts, device = "svg", width = 10, height = 8, units = "in")
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+custom_palette <- colorNumeric(palette = as.character(wes_palette("Rushmore1",type = "continuous")), domain = merged_data_with_shape_sf$prev_obese_men,)
+
+# Create a leaflet map
+leaflet_map <- leaflet() %>%
+  # addProviderTiles("Esri.WorldGrayCanvas") %>%  # Add a basemap
+    addProviderTiles(provider = providers$Stamen.Watercolor) %>%
+
+  addPolygons(
+  data = underlay_map,
+  fill = TRUE,
+  fillColor = "grey",
+  fillOpacity = 1,
+  color = "black" ,           # Border color
+  popup = ~paste("No Data Available")) %>% 
+
+  # Add polygons layer with custom color and tooltip
+  addPolygons(data = merged_data_with_shape_sf,
+              fillColor = ~custom_palette(prev_obese_men),
+              fillOpacity = 1,
+              weight = 1,
+              color = "black",
+              popup = ~paste("District: ", district, "<br>Prevalence: ", prev_obese_men, "%")) %>% 
+  # Add a legend
+  addLegend(
+    position = "bottomright",
+    pal = custom_palette,
+    values = merged_data_with_shape_sf$prev_obese_men,
+    title = "Prevalence"
+  )
+  
+
+
+leaflet_map
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+mapshot(leaflet_map, file = "output_men.png",remove_controls = TRUE)
+
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Load the required packages
+p_load(tmap, RColorBrewer,tmaptools,OpenStreetMap )
+
+# Create a normal color palette
+custom_palette <- rev(brewer.pal(9, "YlOrRd"))  # Using a sequential color palette
+
+# Create a tmap
+tmap_map <- tm_basemap("Stamen.Watercolor") +
+  
+  # Add polygons layer with custom color and tooltip
+  tm_shape(merged_data_with_shape_sf) +
+  tm_polygons(
+    col = "prev_obese_men",
+    palette = custom_palette,
+    style = "cont",
+    border.col = "black",
+    lwd = 1,
+    title = "Prevalence",
+    legend.hist = TRUE,
+    legend.format = list(format = "f", digits = 1),
+    popup.vars = c("district", "prev_obese_men"),
+    popup.format = list(labels = c("District: ", "Prevalence: {level}%"))
+  ) +
+  
+  # Set the layout of the legend
+  tm_layout(legend.position = c("right", "bottom"))
+
+# Display the tmap
+tmap_map
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+c_osm <- tmaptools::read_osm(bb(merged_data_with_shape_sf), ext = 1.05)
+
+tmap_map <- tm_basemap("Stamen.Watercolor") +
+# 
+qtm(merged_data_with_shape_sf, fill = "prev_obese_men", basemaps = "Stamen.Watercolor")
+
+# tm_basemap(leaflet::providers$Stamen.Watercolor) +  
+  # Add polygons layer with custom color and tooltip
+  tm_shape(merged_data_with_shape_sf) +
+  tm_borders(lwd = 1, col = "black") +
+  tm_fill(
+    col = "prev_obese_men",
+    palette = custom_palette,
+    style = "cont",
+    title = "Prevalence",
+    legend.hist = FALSE,  # Disable histogram legend
+    legend.format = list(format = "f", digits = 1)
+  )
+  
+  tmap_map# Set the layout of the legend
+  # tm_layout(legend.position = c("center", "bottom"))
+
+# Display the tmap
+
+current.mode <- tmap_mode("view")
+
+
+tm_basemap(leaflet::providers$Stamen.Watercolor)
+
+tmap_save(tmap_map, filename = "map_output.svg", width = 8, height = 6, units = "in")
+
+# Convert tmap to leaflet
+leaflet_map <- tmap_leaflet(tmap_map)
+
+# Save the leaflet map as an HTML file
+saveWidget(leaflet_map, "map_output.html",selfcontained = )
+
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+library(ggplot2)
+library(sf)
+library(wesanderson)
+
+# Create a custom palette
+custom_palette <- colorNumeric(
+  palette = as.character(wes_palette("Rushmore1", type = "continuous")),
+  domain = merged_data_with_shape_sf$prev_obese_men
+)
+
+# Create a ggplot object
+ggplot() +
+  geom_sf(data = underlay_map, fill = "grey", color = "black") +
+  geom_sf(
+    data = merged_data_with_shape_sf,
+    aes(fill = custom_palette(prev_obese_men)),
+    color = "black",
+    size = 1
+  ) +
+  scale_fill_identity() +
+  labs(fill = "Prevalence") +
+  theme_minimal() +
+  theme(legend.position = "bottomright") +
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) 
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+saveWidget(leaflet_map, 'mapfrance.html', selfcontained = TRUE)
+
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+library(ggplot2)
+library(sf)
+library(wesanderson)
+
+
+
+# Get map extent for setting the plot limits
+map_extent <- as.numeric(st_bbox(underlay_map))
+
+# Create a ggmap object with the background map
+stamen_map <- 
+  get_stamenmap(
+    bbox = c(map_extent[1], map_extent[2], map_extent[3], map_extent[4]),
+    zoom = 7,
+    maptype = "terrain"
+  )
+ggmap(stamen_map)# Create a ggplot object with the map background
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+stamen_map <- stamen_map %>% tidy()
+ggmap(stamen_map) +
+  annotation_raster(stamen_map,
+    xmin = map_extent[1], xmax = map_extent[3],
+    ymin = map_extent[2], ymax = map_extent[4]
+  ) +
+  geom_sf(data = underlay_map, fill = "grey", color = "black") +
+  geom_sf(
+    data = merged_data_with_shape_sf,
+    aes(fill = custom_palette(prev_obese_men)),
+    color = "black",
+    size = 1
+  ) +
+  scale_fill_manual(values = c("grey", custom_palette(100))) +
+  labs(fill = "Prevalence") +
+  theme_void() +
+  theme(legend.position = "bottomright") +
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  geom_sf_label(
+    data = merged_data_with_shape_sf,
+    aes(label = paste("District: ", district, "\nPrevalence: ", prev_obese_men, "%")),
+    color = "black",
+    size = 2,
+    nudge_y = 0.01
+  )
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+underlay_map <- underlay_map %>% fortify()
+
+ggmap(stamen_map) +
+  geom_sf(data = underlay_map, fill = "blue", alpha = 0.5)
+
+map <- ggmap(stamen_map)
+
+# Create a ggplot object with the map and the 'sf' data
+map_with_polygon <- map +
+  geom_sf(data = underlay_map, fill = "blue", alpha = 0.5)
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+merged_data_with_shape_sf %>% group_by(state) %>% summarise() %>% plot()
+
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+states <- geojson_sf("geoBoundaries-IND-ADM1_simplified.geojson")
+
+# Plot the India state boundaries
+menplot_districts + 
+  geom_sf(data = states, color = "black", fill = NA) +
+  theme_tufte()
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+states_centroids <- st_centroid(states)
+
+ggplot(states) +
+  geom_sf() +
+  geom_sf_label(aes(label = shapeName), size = 3, nudge_y = 0.1) +
+  theme_minimal()
+
+
+## ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+setdiff(merged_data$district,merged_data_with_shape$district)
+
