@@ -13,8 +13,8 @@ pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,label
 
 ```{r import, include=F}
 # importing individual recode (IR)
-import_women <- haven::read_dta(here("Data_raw","IAIR7EFL","IAIR7EFL.DTA"), 
-                     col_select = c(v005,v021,v023,v024,sdist,v012,v025,v106,v130,s116,v190,s731g,v213,v208,b19_01,v445,v437,v438,s305))
+import_women <- haven::read_dta(here("Data_raw","IAIR7EDT","IAIR7EFL.DTA"),
+                                col_select = c(v005,v021,v023,v024,sdist,v012,v025,v106,v130,s116,v190,s731g,v213,v208,b19_01,v445,v437,v438,s305))
 
 dict_import_women <- labelled::generate_dictionary(import_women)
 
@@ -26,26 +26,28 @@ women <- import_women %>%
   select(-c(v213,v208,b19_01)) %>% #variables not needed anymore
   # excluding  women less than 18 years
   filter(v012 >= 18) %>% 
-   # height and weight - recoding refusal, not present, other to NA
+  # height and weight - recoding refusal, not present, other to NA
   mutate(across(c(v437, v438), ~replace(., . %in% c(9994,9995,9996), NA))) %>% 
   # BMI - 9998 flagged cases to NA
   mutate(v445 = na_if(v445, 9998)) %>% 
   # waist circumference - 999.5 and 999.6 to NA
   mutate(s305 = replace(s305, s305 %in% c(999.5,999.6), NA)) %>% 
-  # filtering where (height and weight) or BMI is not available
-  filter(!((is.na(v437)|is.na(v438))&is.na(v445))) %>% 
+  
   # filtering NA in waist circumference
   filter(!is.na(s305)) %>% 
   
+  # filtering where (height and weight) or BMI is not available
+  filter(!((is.na(v437)|is.na(v438))&is.na(v445))) %>% 
   # salvaging missing BMI using height and weight to calculate BMI
   mutate(v445 = if_else(is.na(v445),(v437/(v438/100)^2),v445)) %>% 
-    # invalid BMI values to NA per the DHS manual (v445<1200 | v445>6000)
+  # invalid BMI values to NA per the DHS manual (v445<1200 | v445>6000)
   mutate(v445 = if_else(v445 < 1200 | v445 > 6000, NA_real_, v445)) %>% 
-  #  #height & weight has one decimal and BMI has two in the dataset
-  mutate(across(c(v437, v438), ~./10),
-         v445 = v445/100) %>%
   # filtering NA in BMI
   filter(!is.na(v445)) %>% 
+  
+  # height & weight has one decimal and BMI has two in the dataset
+  mutate(across(c(v437, v438), ~./10),
+         v445 = v445/100) %>%
   
   # renaming and setting variable labels
   rename(women_sample_weight = v005,
@@ -70,16 +72,16 @@ women <- import_women %>%
   # defining obesity as per waist circumference and BMI criteria 
   # Women: WC ≥80 cm, BMI ≥25 (ref: The Asia-Pacific perspective : redefining obesity and its treatment,2000)
   mutate(obese_wtcircum = factor(if_else((waist_cm >= 80), "Obese", "Non-obese"),
-                                levels = c("Obese","Non-obese")),
+                                 levels = c("Obese","Non-obese")),
          obese_bmi = factor(if_else((bmi >= 25), "Obese", "Non-obese"),
-                                levels = c("Obese","Non-obese"))) %>% 
+                            levels = c("Obese","Non-obese"))) %>% 
   
   dplyr::select(-c(height_cm,weight_kg,waist_cm))
 
 
 dict_women <- labelled::generate_dictionary(women)
 
-# haven and sjlabelled labelling function to be used later. Integrate with the women code above.
+# haven and sjlabelled labelling function
 women_original <- women
 
 women <- women_original %>% 
@@ -95,13 +97,13 @@ women <- women %>%
          residence = fct_relevel(residence, c("Rural","Urban")),
          education = fct_relevel(education, c("No education","Primary","Secondary","Higher")),
          wealth = fct_relevel(wealth, c("Poorest","Poorer","Middle","Richer","Richest"))
-         ) %>% 
+  ) %>% 
   mutate(religion = fct_relevel(fct_recode(religion, "Buddhist" = "Buddhist / neo-buddhist", "Parsi" = "Parsi / zoroastrian"), 
-                            c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Parsi","Jewish","Other","No religion")),
+                                c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Parsi","Jewish","Other","No religion")),
          
          caste = fct_relevel(fct_recode(caste, "Other backward class" = "Obc"), 
-                            c("Schedule caste","Schedule tribe","Other backward class","Don't know","None of them" )),
-         ) %>% 
+                             c("Schedule caste","Schedule tribe","Other backward class","Don't know","None of them" )),
+  ) %>% 
   
   labelled::set_variable_labels(women_sample_weight = "Women's Sample Weight",
                                 age = "Age in years",
@@ -125,7 +127,6 @@ women <- women %>%
 # creating a reference table for state and district variables
 district_details <- women %>%
   distinct(district_id, state, district)
-
 ```
 
 ```{r flowchart}
@@ -148,13 +149,13 @@ transformations <- list(
   "Step 5 - Waist circumference recoding" = 
     function(data) {mutate(data, s305 = replace(s305, s305 %in% c(999.5, 999.6), NA))},
   
-  "Step 6 - Filtering where (height and weight) or BMI is not available" = 
-    function(data) {filter(data, !((is.na(v437)|is.na(v438))&is.na(v445)))},
-  
-  "Step 7 - Filtering NA in waist circumference" = 
+  "Step 6 - Filtering NA in waist circumference" = 
     function(data) {filter(data, !is.na(s305))},
   
-   "Step 8 - Salvaging missing BMI using height and weight" = 
+  "Step 7 - Filtering where (height and weight) or BMI is not available" = 
+    function(data) {filter(data, !((is.na(v437)|is.na(v438))&is.na(v445)))},
+  
+  "Step 8 - Salvaging missing BMI using height and weight" = 
     function(data) {dplyr::mutate(data, v445 = dplyr::if_else(is.na(v445), round(v437 / (v438 / 100) ^ 2, 2), v445))},
   
   "Step 9 - Invalid BMI values to NA per the DHS manual" = 
@@ -176,26 +177,19 @@ for (i in names(transformations)) {
 }
 
 # Add a column with the difference in row count between steps
-row_counts <- row_counts %>%
+women_row_counts <- row_counts %>%
   mutate(Difference = Rows - lag(Rows, default = first(Rows)))
 
-women_row_counts <- row_counts
+rm(list = c("temp", "i", "transformations","row_counts"))
 
-new_row <- data.frame(
-  Step = "Final Womens Dataset",
-  Rows = tail(women_row_counts$Rows, 1),
-  Difference = 0
-)
-
-# Add the new row to the dataframe
-women_row_counts <- bind_rows(women_row_counts, new_row)
+# The Difference column in the women_row_counts dataframe indicates the change in the number of rows after each transformation step, showing how many rows were removed compared to the previous step.
 ```
 
 ```{r ease of setup+testing}
-# # The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
-# # As a result, the 'women' dataset is now a smaller, more manageable dataset
-# set.seed(226) 
-# women <- women %>% sample_frac(0.01)
+# The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
+# As a result, the 'women' dataset is now a smaller, more manageable dataset
+# set.seed(226)
+# women <- women %>% sample_frac(0.005)
 ```
 
 ```{r survey design}
@@ -208,57 +202,76 @@ options(survey.lonely.psu = "adjust")
 ```
 
 ```{r descriptive summary}
-theme_gtsummary_journal("lancet")
+# theme_gtsummary_journal("lancet")
 
-tbl_svysummary(NFHS5_design, 
-               include = c(obese_wtcircum,obese_bmi),
-               digits = list(all_categorical() ~ c(0,1))) %>% 
+women_prev <- tbl_svysummary(NFHS5_design, 
+                             include = c(obese_wtcircum,obese_bmi),
+                             digits = list(all_categorical() ~ c(0,1))) %>% 
   add_ci(style_fun = everything() ~ purrr::partial(style_number, scale = 100, digits = 1))
 
-tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
-               include = c(age_category,residence,education,religion,wealth,caste,meat),
-               statistic = list(all_categorical() ~ "{p}% ({n})"),
-               missing_text = "NA",
-               percent = "row") %>% 
+women_prev_wc <-  tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
+                                 include = c(age_category,residence,education,religion,wealth,caste,meat),
+                                 statistic = list(all_categorical() ~ "{p}% ({n})"),
+                                 missing_text = "NA",
+                                 percent = "row") %>% 
   add_ci(pattern = "{stat} [{ci}]",
          #for religion, try "svyprop.logit" when using full data
          method = religion ~ "svyprop.beta") %>% 
   add_overall(last = TRUE,
               statistic = ~"{n}")
+
+women_prev_bmi <- tbl_svysummary(NFHS5_design, by = obese_bmi, 
+                                 include = c(age_category,residence,education,religion,wealth,caste,meat),
+                                 statistic = list(all_categorical() ~ "{p}% ({n})"),
+                                 missing_text = "NA",
+                                 percent = "row") %>% 
+  add_ci(pattern = "{stat} [{ci}]",
+         #for religion, try "svyprop.logit" when using full data
+         method = religion ~ "svyprop.beta") %>% 
+  add_overall(last = TRUE,
+              statistic = ~"{n}")
+
+women_prev
+women_prev_wc
+women_prev_bmi
 ```
 
 ```{r fitting model}
-women %>%
+women_model_uv_wc <- women %>%
   select(obese_wtcircum,age_category,residence,education,religion,wealth,caste,meat) %>%
   tbl_uvregression(method = svyglm,
                    y = obese_wtcircum,
-                   method.args = list(design=NFHS5_design, family = binomial()),
+                   method.args = list(design=NFHS5_design, family = quasibinomial()),
                    exponentiate = TRUE,
                    pvalue_fun = ~ style_pvalue(.x, digits = 2)
   )
 
-m1 <- svyglm(obese_wtcircum ~ age_category+residence+education+religion+wealth+caste+meat, design=NFHS5_design, data = men, family = binomial())
+women_model_adj_wc <- svyglm(obese_wtcircum ~ age_category+residence+education+religion+wealth+caste+meat, design=NFHS5_design, data = men, family = quasibinomial())
 
-# m1 %>% 
+# women_model_adj_wc %>% 
 #   model_performance()
 # 
-# summ(m1, vifs = T)
+# summ(women_model_adj_wc, vifs = T)
 
-m1 %>% 
+women_model_adj_wc_est <- women_model_adj_wc %>% 
   tbl_regression(exponentiate = T)
 
+women_model_uv_wc
+women_model_adj_wc_est
 ```
 
 ```{r prevalence by state-district}
 # obesity prevalence disaggregated by state
-tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
-               include = c(state),
-               statistic = list(all_categorical() ~ "{p}% ({n})"),
-               missing_text = "NA",
-               percent = "row") %>% 
+women_state_wc <- tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
+                                 include = c(state),
+                                 statistic = list(all_categorical() ~ "{p}% ({n})"),
+                                 missing_text = "NA",
+                                 percent = "row") %>% 
   add_ci(pattern = "{stat} [{ci}]") %>% 
   add_overall(last = TRUE,
               statistic = ~"{n}")
+
+women_state_wc
 
 state_est <- svyby(~obese_wtcircum, ~state, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci"), multicore = TRUE) %>%
   select(!contains("Non-")) %>% 
@@ -273,19 +286,19 @@ state_count <- svyby(~obese_wtcircum, ~state, NFHS5_design, svytotal, keep.names
   mutate(n = round(rowSums(select(., `obese_wtcircumNon-obese`,`obese_wtcircumObese`), na.rm = TRUE),0)) %>% 
   select(state,n)
 
-state <- merge(state_est, state_count, by = "state")
+women_state_wc_df <- merge(state_est, state_count, by = "state")
 
 # obesity prevalence disaggregated by district
-tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
-               include = c(state,district),
-               statistic = list(all_categorical() ~ "{p}% ({n})"),
-               missing_text = "NA",
-               percent = "row") %>% 
+women_district_wc <- tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
+                                  include = c(district_id),
+                                  statistic = list(all_categorical() ~ "{p}% ({n})"),
+                                  missing_text = "NA",
+                                  percent = "row") %>% 
   add_ci(pattern = "{stat} [{ci}]") %>% 
   add_overall(last = TRUE,
               statistic = ~"{n}")
 
-  district_est <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci"), multicore = TRUE) %>%
+district_est <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci"), multicore = TRUE) %>%
   select(!contains("Non-")) %>% 
   rename(prev_obese = obese_wtcircumObese,
          se_obese = se.obese_wtcircumObese,
@@ -293,17 +306,20 @@ tbl_svysummary(NFHS5_design, by = obese_wtcircum,
          ci_u_obese = ci_u.obese_wtcircumObese) %>%
   mutate(across(where(is.numeric), ~ round(.x * 100, 1)))
 
-  district_count <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svytotal, keep.names = FALSE, na.rm = TRUE,multicore = TRUE) %>% 
+district_count <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svytotal, keep.names = FALSE, na.rm = TRUE,multicore = TRUE) %>% 
   select(!starts_with("se.")) %>% 
   mutate(n = round(rowSums(select(., `obese_wtcircumNon-obese`,`obese_wtcircumObese`), na.rm = TRUE),0)) %>% 
   select(district_id,n)
 
 district <- merge(district_est, district_count, by = "district_id")
-final_district <- merge(district,district_details, by = "district_id") 
+
+women_district_wc <- merge(district,district_details, by = "district_id") %>% 
+  mutate(state = str_to_title(state),
+         district = str_to_title(district))
 ```
 
 
 ```{r, exporting estimates for women}
-
-write.xlsx(final_district,"women_dist_obesity_prev.xlsx")
+export(women_district_wc,here("Output","women_dist_obesity_prev_wc.xlsx"))
+save(list = ls(pattern = "^women_"), file = here("Output","women_output.Rdata"))
 ```

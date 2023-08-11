@@ -43,20 +43,22 @@ men <- import_men %>%
   mutate(hb40 = na_if(hb40, 9998)) %>% 
   # waist circumference - 999.5 and 999.6 to NA
   mutate(s305 = replace(smb305, smb305 %in% c(999.5,999.6), NA)) %>% 
-  # filtering where (height and weight) or BMI is not available
-  filter(!((is.na(hb2)|is.na(hb3))&is.na(hb40))) %>% 
-  # filtering NA in waist circumference
+  
+   # filtering NA in waist circumference
   filter(!is.na(s305)) %>% 
   
+  # filtering where (height and weight) or BMI is not available
+  filter(!((is.na(hb2)|is.na(hb3))&is.na(hb40))) %>% 
   # salvaging missing BMI using height and weight to calculate BMI
   mutate(hb40 = if_else(is.na(hb40),(hb2/(hb3/100)^2),hb40)) %>% 
   # invalid BMI values to NA per the DHS manual (hb40<1200 | hb40>6000)
   mutate(hb40 = if_else(hb40 < 1200 | hb40 > 6000, NA_real_, hb40)) %>% 
-  #  #height & weight has one decimal and BMI has two in the dataset
-  mutate(across(c(hb2, hb3), ~./10),
-         hb40 = hb40/100) %>%
   # filtering NA in BMI
   filter(!is.na(hb40)) %>% 
+  
+  # height & weight has one decimal and BMI has two in the dataset
+  mutate(across(c(hb2, hb3), ~./10),
+         hb40 = hb40/100) %>%
   
   # renaming and setting variable labels
   rename(men_sample_weight = mv005,
@@ -90,7 +92,7 @@ men <- import_men %>%
 
 dict_men <- labelled::generate_dictionary(men)
 
-# haven and sjlabelled labelling function to be used later. Integrate with the men code above.
+# haven and sjlabelled labelling function
 men_original <- men
 
 men <- men_original %>% 
@@ -147,7 +149,7 @@ transformations <- list(
     function(data) {filter(data, mv012 >= 18)},
   
   "Step 2 - Height and weight recoding" = 
-    function(data) {mutate(data, across(c(hb2, hb3), ~replace(., . %in% c(9995, 9996, 9994), NA)))},
+    function(data) {mutate(data, across(c(hb2, hb3), ~replace(., . %in% c(9994, 9995, 9996), NA)))},
   
   "Step 3 - BMI recoding" = 
     function(data) {mutate(data, hb40 = na_if(hb40, 9998))},
@@ -155,17 +157,17 @@ transformations <- list(
   "Step 4 - Waist circumference recoding" = 
     function(data) {mutate(data, s305 = replace(smb305, smb305 %in% c(999.5, 999.6), NA))},
   
-  "Step 5 - Filtering where (height and weight) or BMI is not available" = 
-    function(data) {filter(data, !((is.na(hb2)|is.na(hb3))&is.na(hb40)))},
-  
-  "Step 6 - Filtering NA in waist circumference" = 
+  "Step 5 - Filtering NA in waist circumference" = 
     function(data) {filter(data, !is.na(s305))},
   
+  "Step 6 - Filtering where (height and weight) or BMI is not available" = 
+    function(data) {filter(data, !((is.na(hb2)|is.na(hb3))&is.na(hb40)))},
+  
   "Step 7 - Salvaging missing BMI using height and weight" = 
-    function(data) {dplyr::mutate(data, hb40 = dplyr::if_else(is.na(hb40), round(hb2 / (hb3 / 100) ^ 2, 2), hb40))},
+    function(data) {mutate(data, hb40 = if_else(is.na(hb40), round(hb2 / (hb3 / 100) ^ 2, 2), hb40))},
   
   "Step 8 - Invalid BMI values to NA per the DHS manual" = 
-    function(data) {dplyr::mutate(data, hb40 = dplyr::if_else(hb40 < 1200 | hb40 > 6000, NA, hb40))},
+    function(data) {mutate(data, hb40 = if_else(hb40 < 1200 | hb40 > 6000, NA, hb40))},
   
   "Step 9 - Filtering NA in BMI" = 
     function(data) {filter(data, !is.na(hb40))}
@@ -183,25 +185,17 @@ for (i in names(transformations)) {
 }
 
 # Add a column with the difference in row count between steps
-row_counts <- row_counts %>%
+men_row_counts <- row_counts %>%
   mutate(Difference = Rows - lag(Rows, default = first(Rows)))
 
-# rm(list = c("temp", "i", "transformations"))
-men_row_counts <- row_counts
-new_row <- data.frame(
-  Step = "Final Mens Dataset",
-  Rows = tail(men_row_counts$Rows, 1),
-  Difference = 0
-)
+rm(list = c("temp", "i", "transformations","row_counts"))
 
-# Add the new row to the dataframe
-men_row_counts <- bind_rows(men_row_counts, new_row)
-
+# The Difference column in the men_row_counts dataframe indicates the change in the number of rows after each transformation step, showing how many rows were removed compared to the previous step.
 ```
 
 ```{r ease of setup+testing}
-# # The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
-# # As a result, the 'men' dataset is now a smaller, more manageable dataset
+# The advantage of this approach is that it significantly reduces computation time when setting up and testing the code.
+# As a result, the 'men' dataset is now a smaller, more manageable dataset
 # set.seed(226)
 # men <- men %>% sample_frac(0.01)
 ```
@@ -216,14 +210,14 @@ options(survey.lonely.psu = "adjust")
 ```
 
 ```{r descriptive summary}
-theme_gtsummary_journal("lancet")
+# theme_gtsummary_journal("lancet")
 
-prev_men<-tbl_svysummary(NFHS5_design, 
+men_prev <- tbl_svysummary(NFHS5_design, 
                          include = c(obese_wtcircum,obese_bmi),
                          digits = list(all_categorical() ~ c(0,1))) %>% 
   add_ci(style_fun = everything() ~ purrr::partial(style_number, scale = 100, digits = 1))
 
-prev_wc_men <- tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
+men_prev_wc <- tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
                               include = c(age_category,residence,education,religion,wealth,caste,meat),
                               statistic = list(all_categorical() ~ "{p}% ({n})"),
                               missing_text = "NA",
@@ -234,7 +228,7 @@ prev_wc_men <- tbl_svysummary(NFHS5_design, by = obese_wtcircum,
   add_overall(last = TRUE,
               statistic = ~"{n}")
 
-prev_bmi_men <- tbl_svysummary(NFHS5_design, by = obese_bmi, 
+men_prev_bmi <- tbl_svysummary(NFHS5_design, by = obese_bmi, 
                                include = c(age_category,residence,education,religion,wealth,caste,meat),
                                statistic = list(all_categorical() ~ "{p}% ({n})"),
                                missing_text = "NA",
@@ -245,13 +239,13 @@ prev_bmi_men <- tbl_svysummary(NFHS5_design, by = obese_bmi,
   add_overall(last = TRUE,
               statistic = ~"{n}")
 
-prev_men
-prev_wc_men
-prev_bmi_men
+men_prev
+men_prev_wc
+men_prev_bmi
 ```
 
 ```{r fitting model}
-model_uv_wc_men <- men %>%
+men_model_uv_wc <- men %>%
   select(obese_wtcircum,age_category,residence,education,religion,wealth,caste,meat) %>%
   tbl_uvregression(method = svyglm,
                    y = obese_wtcircum,
@@ -259,24 +253,24 @@ model_uv_wc_men <- men %>%
                    exponentiate = TRUE,
                    pvalue_fun = ~ style_pvalue(.x, digits = 2))
 
-model_adj_wc_men <- svyglm(obese_wtcircum ~ age_category+residence+education+religion+wealth+caste+meat, 
+men_model_adj_wc <- svyglm(obese_wtcircum ~ age_category+residence+education+religion+wealth+caste+meat, 
                            design=NFHS5_design, data = men, family = quasibinomial())
 
-# model_adj_wc_men %>% 
+# men_model_adj_wc %>% 
 #   model_performance()
 # 
-# summ(model_adj_wc_men, vifs = T)
+# summ(men_model_adj_wc, vifs = T)
 
-model_adj_wc_men_est <- model_adj_wc_men %>% 
+men_model_adj_wc_est <- men_model_adj_wc %>% 
   tbl_regression(exponentiate = T)
 
-model_uv_wc_men
-model_adj_wc_men_est
+men_model_uv_wc
+men_model_adj_wc_est
 ```
 
 ```{r prevalence by state-district}
 # obesity prevalence disaggregated by state
-state_wc_men <- tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
+men_state_wc <- tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
                                include = c(state),
                                statistic = list(all_categorical() ~ "{p}% ({n})"),
                                missing_text = "NA",
@@ -285,7 +279,7 @@ state_wc_men <- tbl_svysummary(NFHS5_design, by = obese_wtcircum,
   add_overall(last = TRUE,
               statistic = ~"{n}")
 
-state_wc_men
+men_state_wc
 
 state_est <- svyby(~obese_wtcircum, ~state, NFHS5_design, svymean, keep.names = FALSE, na.rm = TRUE, vartype = c("se", "ci"), multicore = TRUE) %>%
   select(!contains("Non-")) %>% 
@@ -300,10 +294,10 @@ state_count <- svyby(~obese_wtcircum, ~state, NFHS5_design, svytotal, keep.names
   mutate(n = round(rowSums(select(., `obese_wtcircumNon-obese`,`obese_wtcircumObese`), na.rm = TRUE),0)) %>% 
   select(state,n)
 
-state <- merge(state_est, state_count, by = "state")
+men_state_wc_df <- merge(state_est, state_count, by = "state")
 
 # obesity prevalence disaggregated by district
-district_wc_men <- tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
+men_district_wc <- tbl_svysummary(NFHS5_design, by = obese_wtcircum, 
                                   include = c(district_id),
                                   statistic = list(all_categorical() ~ "{p}% ({n})"),
                                   missing_text = "NA",
@@ -327,12 +321,13 @@ district_count <- svyby(~obese_wtcircum, ~district_id, NFHS5_design, svytotal, k
 
 district <- merge(district_est, district_count, by = "district_id")
 
-final_district_wc_men <- merge(district,district_details, by = "district_id") %>% 
+men_district_wc <- merge(district,district_details, by = "district_id") %>% 
   mutate(state = str_to_title(state),
          district = str_to_title(district))
 ```
 
 ```{r export}
-export(final_district,here("Output","men_dist_obesity_prev_wc.xlsx"))
+export(men_district_wc,here("Output","men_dist_obesity_prev_wc.xlsx"))
+save(list = ls(pattern = "^men_"), file = here("Output","men_output.Rdata"))
 ```
 

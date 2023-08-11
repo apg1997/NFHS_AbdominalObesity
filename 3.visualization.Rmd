@@ -1,0 +1,328 @@
+---
+title: "Obesity amongst men, NFHS - 5, visualisations"
+author: "Arkaprabha Gun, Tushar Garg"
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=F,message=F, warning=F)
+suppressMessages(if (!require("pacman")) install.packages("pacman"))
+pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools,forestploter)
+```
+
+```{r import}
+load(here("Output","men_output.Rdata"));load(here("Output","women_output.Rdata"))
+rm(list = grep("original", ls(), value = TRUE))
+```
+
+```{r prevalence}
+process_prev <- function(data, data_wc, data_bmi, gender) {
+  
+  fig_prev <- data %>% 
+    as_data_frame() %>% 
+    rename("Characteristic"=1, "count_prop"=2, "ci"=3) %>% 
+    separate(count_prop, into = c("count", "prop"), sep = " \\(") %>%
+    mutate(
+      prop = str_extract(prop, "\\d+\\·?\\d*"),
+      prop = str_replace_all(prop, "\\·", "."),
+      prop = as.numeric(prop)/100,
+      count = as.numeric(count)
+    ) %>% 
+    separate(ci, into = c("low_ci", "high_ci"), sep = ", ") %>%
+    mutate(
+      low_ci = as.numeric(str_replace(str_remove(low_ci, "%"), "\\·", ".")) / 100,
+      high_ci = as.numeric(str_replace(str_remove(high_ci, "%"), "\\·", ".")) / 100
+    ) %>%
+    mutate(Characteristic = case_when(
+      row_number(Characteristic) %in% 1:3 ~ paste0(Characteristic, "_wc_", gender),
+      row_number(Characteristic) %in% 4:6 ~ paste0(Characteristic, "_bmi_", gender),
+      TRUE ~ Characteristic
+    )) %>%
+    filter(str_detect(Characteristic, "Obese")) %>%
+    pivot_wider(
+      names_from = Characteristic, 
+      values_from = c(count, prop, low_ci, high_ci)
+    ) %>% 
+    mutate(Characteristic = "Overall") %>% 
+    select(Characteristic, everything())
+  
+  # Code for wc
+  fig_prev_wc <- data_wc %>% 
+    as_data_frame() %>% 
+    select(-contains(c("Non-","Overall"))) %>% 
+    rename("Characteristic"=1, "estimate"=2) %>% 
+    mutate(
+      prop = str_extract(estimate, "^\\d+") %>% as.numeric() / 100,
+      count = str_extract(estimate, "(?<=\\()\\d+(?=\\))") %>% as.numeric(),
+      low_ci = str_extract(estimate, "(?<=\\[)\\d+") %>% as.numeric() / 100,
+      high_ci = str_extract(estimate, "(?<=, )\\d+(?=\\%\\])") %>% as.numeric() / 100
+    ) %>% 
+    select(-estimate) %>% 
+    rename_with(~paste0(., paste0("_Obese_wc_", gender)), .cols = -c("Characteristic"))
+  
+  # Code for bmi
+  fig_prev_bmi <- data_bmi %>% 
+    as_data_frame() %>% 
+    select(-contains(c("Non-","Overall"))) %>% 
+    rename("Characteristic"=1, "estimate"=2) %>% 
+    mutate(
+      prop = str_extract(estimate, "^\\d+") %>% as.numeric() / 100,
+      count = str_extract(estimate, "(?<=\\()\\d+(?=\\))") %>% as.numeric(),
+      low_ci = str_extract(estimate, "(?<=\\[)\\d+") %>% as.numeric() / 100,
+      high_ci = str_extract(estimate, "(?<=, )\\d+(?=\\%\\])") %>% as.numeric() / 100
+    ) %>% 
+    select(-estimate) %>% 
+    rename_with(~paste0(., paste0("_Obese_bmi_", gender)), .cols = -c("Characteristic"))
+  
+  # Final assembly
+  fig_prev <- left_join(fig_prev_wc, fig_prev_bmi, by = "Characteristic") %>% 
+    bind_rows(fig_prev, .) %>%
+    select(-paste0("count_Obese_bmi_", gender))
+  
+  return(fig_prev)
+}
+
+fig_prev_women <- process_prev(women_prev, women_prev_wc, women_prev_bmi, "women")
+fig_prev_men <- process_prev(men_prev, men_prev_wc, men_prev_bmi, "men")
+
+fig_prev <- left_join(fig_prev_women, fig_prev_men, by = "Characteristic")
+
+```
+
+```{r prevalence figure}
+# indent the subgroup if there is a number in the count_Obese_wc_women column
+fig_prev$Characteristic <- ifelse(is.na(fig_prev$count_Obese_wc_women), 
+                                  fig_prev$Characteristic, paste0("     ", fig_prev$Characteristic))
+
+# NA to blank or NA will be transformed to character.
+fig_prev$n1 <- ifelse(is.na(fig_prev$count_Obese_wc_women), "", fig_prev$count_Obese_wc_women)
+fig_prev$n2 <- ifelse(is.na(fig_prev$count_Obese_wc_men), "", fig_prev$count_Obese_wc_men)
+
+
+# Add two blank column for CI
+fig_prev$`Women` <- paste(rep(" ", 20), collapse = " ")
+fig_prev$`Men` <- paste(rep(" ", 20), collapse = " ")
+
+# Set-up theme
+theme_prev <- forest_theme(base_size = 10,
+                   refline_lty = "solid",
+                   ci_pch = c(15, 18),
+                   ci_col = c("#377eb8", "#4daf4a"),
+                   footnote_col = "blue",
+                   legend_name = "Group",
+                   legend_value = c("Waist circumference", "Body mass index"),
+                   vertline_lty = c("dashed"),
+                   vertline_col = c("#d6604d"))
+
+fig_prev_plot <- forest(fig_prev[,c(1, 16, 18, 17, 19)],
+            est = list(fig_prev$prop_Obese_wc_women,
+                       fig_prev$prop_Obese_bmi_women,
+                       fig_prev$prop_Obese_wc_men,
+                       fig_prev$prop_Obese_bmi_men),
+            lower = list(fig_prev$low_ci_Obese_wc_women,
+                       fig_prev$low_ci_Obese_bmi_women,
+                       fig_prev$low_ci_Obese_wc_men,
+                       fig_prev$low_ci_Obese_bmi_men), 
+            upper = list(fig_prev$high_ci_Obese_wc_women,
+                       fig_prev$high_ci_Obese_bmi_women,
+                       fig_prev$high_ci_Obese_wc_men,
+                       fig_prev$high_ci_Obese_bmi_men), 
+            ci_column = c(3, 5),
+            xlim = list(c(0, 1), c(0, 1)),
+            xlab = c(""),
+            vert_line = list(c(fig_prev$prop_Obese_wc_women[fig_prev$Characteristic == "Overall"]), 
+                             c(fig_prev$prop_Obese_wc_men[fig_prev$Characteristic == "Overall"])),
+            nudge_y = 0.3,
+            theme = theme_prev) %>% 
+  edit_plot(row = c(1,2,6,9,14,25,31,38),
+            gp = gpar(fontface = "bold"))
+
+# plot(fig_prev_plot)
+
+ggplot2::ggsave(filename = here("Output", "fig_prev_plot.jpeg"), plot = fig_prev_plot,
+                dpi = 300, width = 8.5, height = 13, units = "in")
+```
+
+```{r model}
+process_model <- function(data, gender_suffix, model_suffix) {
+  data %>%
+    as_data_frame() %>% 
+    rename(Characteristic = `**Characteristic**`,
+           or = `**OR**`,
+           ci = `**95% CI**`,
+           p_value = `**p-value**`) %>%
+    separate(ci, into = c("low_ci", "high_ci"), sep = ", ") %>%
+    mutate(
+      !!paste0("or_", gender_suffix, "_", model_suffix) := str_replace_all(or, "\\·", ".") %>% as.numeric(),
+      !!paste0("low_ci_", gender_suffix, "_", model_suffix) := str_replace_all(low_ci, "\\·", ".") %>% as.numeric(),
+      !!paste0("high_ci_", gender_suffix, "_", model_suffix) := str_replace_all(high_ci, "\\·", ".") %>% as.numeric(),
+      !!paste0("p_value_", gender_suffix, "_", model_suffix) := as.numeric(p_value)
+    ) %>%
+    select(Characteristic, 
+           paste0("or_", gender_suffix, "_", model_suffix), 
+           paste0("low_ci_", gender_suffix, "_", model_suffix), 
+           paste0("high_ci_", gender_suffix, "_", model_suffix), 
+           paste0("p_value_", gender_suffix, "_", model_suffix))
+}
+
+fig_model_women_adj <- process_model(women_model_adj_wc_est, "women", "adj")
+fig_model_men_adj <- process_model(men_model_adj_wc_est, "men", "adj")
+
+fig_model_women_uv <- process_model(women_model_uv_wc, "women", "uv")
+fig_model_men_uv <- process_model(men_model_uv_wc, "men", "uv")
+
+fig_model <- left_join(fig_model_women_adj, fig_model_women_uv, by = "Characteristic") %>%
+  left_join(fig_model_men_adj, by = "Characteristic") %>%
+  left_join(fig_model_men_uv, by = "Characteristic") %>% 
+  select(-contains("p_value"))
+```
+
+```{r model figure}
+# indent the subgroup
+indent_check <- c("Age category", "Type of Residence", "Highest Education Level", 
+                     "religion", "Wealth Index", "Caste", "Frequency of Eating Meat")
+
+fig_model$Characteristic <- ifelse(fig_model$Characteristic %in% indent_check, fig_model$Characteristic,
+                                   paste0("     ", fig_model$Characteristic))
+
+
+fig_model$`OR (95% CI)` <- ifelse(is.na(fig_model$or_women_adj), "",
+                                  sprintf("%.2f (%.2f to %.2f)",
+                                          fig_model$or_women_adj,
+                                          fig_model$low_ci_women_adj, fig_model$high_ci_women_adj))
+
+fig_model$`OR (95% CI) ` <- ifelse(is.na(fig_model$or_men_adj), "",
+                                  sprintf("%.2f (%.2f to %.2f)",
+                                          fig_model$or_men_adj,
+                                          fig_model$low_ci_men_adj, fig_model$high_ci_men_adj))
+
+
+# Add two blank column for CI
+fig_model$`Women` <- paste(rep(" ", 30), collapse = " ")
+fig_model$`Men` <- paste(rep(" ", 30), collapse = " ")
+
+# Set-up theme
+theme_model <- forest_theme(base_size = 10,
+                   ci_pch = c(15, 18),
+                   ci_col = c("#377eb8", "#4daf4a"),
+                   footnote_col = "blue",
+                   legend_name = "Group",
+                   legend_value = c("Univariate model", "Adjusted model"),
+                   vertline_lty = c("dashed"),
+                   vertline_col = c("#d6604d"),
+                   # arrow_type = "closed",
+                   # arrow_label_just = "end"
+                   )
+
+fig_model_plot <- forest(fig_model[c(1, 16, 14, 17, 15)],
+            est = list(fig_model$or_women_uv,
+                       fig_model$or_women_adj,
+                       fig_model$or_men_uv,
+                       fig_model$or_men_adj),
+            lower = list(fig_model$low_ci_women_uv,
+                         fig_model$low_ci_women_adj,
+                         fig_model$low_ci_men_uv,
+                         fig_model$low_ci_men_adj), 
+            upper = list(fig_model$high_ci_women_uv,
+                         fig_model$high_ci_women_adj,
+                         fig_model$high_ci_men_uv,
+                         fig_model$high_ci_men_adj), 
+            ci_column = c(2, 4),
+            xlim = list(c(0, 3), c(0, 3)),
+            xlab = c(""),
+            vert_line = list(c(1), c(1)),
+            nudge_y = 0.3,
+            theme = theme_model) %>%
+  edit_plot(row = c(1,5,8,13,24,30,37),
+            gp = gpar(fontface = "bold"))
+
+# plot(fig_model_plot)
+
+ggplot2::ggsave(filename = here("Output", "fig_model_plot.jpeg"), plot = fig_model_plot,
+                dpi = 300, width = 14, height = 13, units = "in")
+```
+
+
+```{r turned into function above}
+# fig_men_prev <- men_prev %>% 
+#   as_data_frame() %>% 
+#   rename("Characteristic"=1, "count_prop"=2, "ci"=3) %>% 
+#   separate(count_prop, into = c("count", "prop"), sep = " \\(") %>%
+#   
+#   mutate(prop = str_extract(prop, "\\d+\\·?\\d*"),
+#          prop = str_replace_all(prop, "\\·", "."),
+#          prop = as.numeric(prop)/100) %>%
+#   mutate(count = as.numeric(count)) %>% 
+#   
+#   separate(ci, into = c("low_ci", "high_ci"), sep = ", ") %>%
+#   mutate(low_ci = as.numeric(str_replace(str_remove(low_ci, "%"), "\\·", ".")) / 100,
+#          high_ci = as.numeric(str_replace(str_remove(high_ci, "%"), "\\·", ".")) / 100) %>%  
+#   
+#   mutate(Characteristic = case_when(row_number(Characteristic) %in% 1:3 ~ paste0(Characteristic, "_wc_men"),
+#                                     row_number(Characteristic) %in% 4:6 ~ paste0(Characteristic, "_bmi_men"),
+#                                     TRUE ~ Characteristic)) %>% 
+#   
+#   filter(str_detect(Characteristic, "Obese")) %>%
+#   pivot_wider(names_from = Characteristic, 
+#               values_from = c(count,prop,low_ci,high_ci)) %>% 
+#    mutate(Characteristic = "Overall") %>% 
+#    select(Characteristic, everything())
+# 
+# fig_men_prev_wc <- men_prev_wc %>% 
+#   as_data_frame() %>% 
+#   select(-contains(c("Non-","Overall"))) %>% 
+#   rename("Characteristic"=1, "estimate"=2) %>% 
+#   mutate(prop = str_extract(estimate, "^\\d+") %>% as.numeric() / 100,
+#          count = str_extract(estimate, "(?<=\\()\\d+(?=\\))") %>% as.numeric(),
+#          low_ci = str_extract(estimate, "(?<=\\[)\\d+") %>% as.numeric() / 100,
+#          high_ci = str_extract(estimate, "(?<=, )\\d+(?=\\%\\])") %>% as.numeric() / 100) %>% 
+#   select(-estimate) %>% 
+#   rename_with(~paste0(., "_Obese_wc_men"), .cols = -c("Characteristic"))
+# 
+# fig_men_prev_bmi <- men_prev_bmi %>% 
+#   as_data_frame() %>% 
+#   select(-contains(c("Non-","Overall"))) %>% 
+#   rename("Characteristic"=1, "estimate"=2) %>% 
+#   mutate(prop = str_extract(estimate, "^\\d+") %>% as.numeric() / 100,
+#          count = str_extract(estimate, "(?<=\\()\\d+(?=\\))") %>% as.numeric(),
+#          low_ci = str_extract(estimate, "(?<=\\[)\\d+") %>% as.numeric() / 100,
+#          high_ci = str_extract(estimate, "(?<=, )\\d+(?=\\%\\])") %>% as.numeric() / 100) %>% 
+#   select(-estimate) %>% 
+#   rename_with(~paste0(., "_Obese_bmi_men"), .cols = -c("Characteristic"))
+# 
+# fig_men_prev <- left_join(fig_men_prev_wc,fig_men_prev_bmi,by="Characteristic") %>% 
+#   bind_rows(fig_men_prev,.) %>%
+#   # figure legend: counts are only for waist circumference (not BMI)
+#   select(-count_Obese_bmi_men)
+# ________________________________________________________________________
+# ________________________________________________________________________
+
+# fig_model_men <- men_model_adj_wc_est %>% 
+#   as_data_frame() %>% 
+#   rename(Characteristic = `**Characteristic**`,
+#     or = `**OR**`,
+#     ci = `**95% CI**`,
+#     p_value = `**p-value**`) %>%
+#     separate(ci, into = c("low_ci", "high_ci"), sep = " to ") %>%
+#   mutate(or_men = str_replace_all(or, "\\·", ".") %>% as.numeric(),
+#     low_ci_men = str_replace_all(low_ci, "\\·", ".") %>% as.numeric(),
+#     high_ci_men = str_replace_all(high_ci, "\\·", ".") %>% as.numeric(),
+#     p_value_men = as.numeric(p_value)) %>%
+#   select(Characteristic, or_men, low_ci_men, high_ci_men, p_value_men)
+# 
+# fig_model_women <- women_model_adj_wc_est %>% 
+#   as_data_frame() %>% 
+#   rename(Characteristic = `**Characteristic**`,
+#     or = `**OR**`,
+#     ci = `**95% CI**`,
+#     p_value = `**p-value**`) %>%
+#     separate(ci, into = c("low_ci", "high_ci"), sep = " to ") %>%
+#   mutate(or_women = str_replace_all(or, "\\·", ".") %>% as.numeric(),
+#     low_ci_women = str_replace_all(low_ci, "\\·", ".") %>% as.numeric(),
+#     high_ci_women = str_replace_all(high_ci, "\\·", ".") %>% as.numeric(),
+#     p_value_women = as.numeric(p_value)) %>%
+#   select(Characteristic, or_women, low_ci_women, high_ci_women, p_value_women)
+# 
+# fig_model <- left_join(fig_model_women, fig_model_men, by = "Characteristic")
+```
