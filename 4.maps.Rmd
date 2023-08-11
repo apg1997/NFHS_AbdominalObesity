@@ -112,9 +112,9 @@ menplot_districts <- ggplot() +
   # geom_spatraster_rgb(data = basemap) +
   geom_sf(data = underlay_map) +
   geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
-  scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
+  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
   # scale_fill_fermenter(direction= +1, type = "seq")+
-    # scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
+    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
   # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
   theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
   labs(title = "Prevalence of Abdominal Obesity in Men by District",fill = "Prevalence in % age")
