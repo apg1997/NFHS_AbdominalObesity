@@ -20,3 +20,5 @@
 !shapefiles/*.geojson
 
 !shapefiles/*.shp
+
+!shps/*.shp
