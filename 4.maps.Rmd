@@ -8,9 +8,9 @@ date: "`r Sys.Date()`"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-p_load(  "base", "broom", "dplyr", "geojsonio", "ggmap", "ggplot2", "ggthemes",
-  "grDevices", "htmlwidgets", "leaflet", "maptiles", "mapview",
-  "pacman", "RColorBrewer", "sf", "tidyterra", "tmap", "tmaptools",openxlsx,wesanderson)
+p_load(base, broom, dplyr, geojsonio, ggmap, ggplot2, ggthemes,
+  grDevices, htmlwidgets, leaflet, maptiles, mapview,
+  pacman, RColorBrewer, sf, tidyterra, tmap, tmaptools, openxlsx, wesanderson)
 
 ```
 
@@ -67,7 +67,7 @@ merged_data <- merged_data %>%
 ```{r, loading dhs shapefile,include=FALSE}
 p_load(sf,dplyr,ggthemes)
 
-shapefile <- st_read("shapefiles/sdr_subnational_boundaries2.shp")
+shapefile <- st_read("shps/sdr_subnational_boundaries2.shp")
 
 ```
 
