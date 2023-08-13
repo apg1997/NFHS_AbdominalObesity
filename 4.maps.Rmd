@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
 p_load(base, broom, dplyr, geojsonio, ggmap, ggplot2, ggthemes,
   grDevices, htmlwidgets, leaflet, maptiles, mapview,
-  pacman, RColorBrewer, sf, tidyterra, tmap, tmaptools, openxlsx, wesanderson)
+  pacman, RColorBrewer, sf, tidyterra, tmap, tmaptools, openxlsx, wesanderson,rio,janitor,here)
 
 ```
 
@@ -33,8 +33,9 @@ p_load(base, broom, dplyr, geojsonio, ggmap, ggplot2, ggthemes,
 ```
 
 ```{r, loading district files}
-women <- read.xlsx("women_dist_obesity_prev.xlsx")
-men <- read.xlsx("men_dist_obesity_prev.xlsx")
+men <- import(here("Output","men_dist_obesity_prev_wc.xlsx"))
+women <- import(here("Output","women_dist_obesity_prev_wc.xlsx"))
+
 ```
 
 
