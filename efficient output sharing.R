@@ -11,7 +11,7 @@ pacman::p_load(tidyverse,rio,here,gtsummary)
 # Men
 ########
 
-load(here("Output","men_output.Rdata"))
+load(here("Output","men_output_smallest.Rdata"))
 
 save(list = setdiff(ls(pattern = "^men_"), "men_original"), file = here("Output", "men_output_smaller.Rdata"))
 
@@ -26,11 +26,26 @@ for(obj_name in objs_to_butcher) {
   assign(obj_name, tbl_butcher(get(obj_name)))
 }
 
-save(list = setdiff(ls(pattern = "^men_"), "men_original"), file = here("Output", "men_output_smallest.Rdata"))
+save(list = setdiff(ls(pattern = "^men_"), c("men_original","men_model_adj_wc")), file = here("Output", "men_output_smallest.Rdata"))
 
 #######################################
 
 rm(list = ls())
+
+# 
+# 
+# pacman::p_load(tidyverse,rio,here,gtsummary)
+# load(here("Output","men_output.Rdata"))
+# 
+# all_objects <- ls(envir = .GlobalEnv)
+# 
+# sizes_in_MB <- sapply(all_objects, function(obj_name) {
+#   object.size(get(obj_name, envir = .GlobalEnv)) / (1024^3)
+# })
+# 
+# print(sizes_in_MB)
+# 
+# z <- men_model_uv_wc %>% tbl_butcher()
 
 ########
 # Women
@@ -52,3 +67,4 @@ for(obj_name in objs_to_butcher) {
 }
 
 save(list = setdiff(ls(pattern = "^women_"), "women_original"), file = here("Output", "women_output_smallest.Rdata"))
+
