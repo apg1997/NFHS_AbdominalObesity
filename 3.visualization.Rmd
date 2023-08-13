@@ -12,8 +12,7 @@ pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,label
 ```
 
 ```{r import}
-load(here("Output","men_output.Rdata"));load(here("Output","women_output.Rdata"))
-rm(list = grep("original", ls(), value = TRUE))
+load(here("Output","men_output_viz.Rdata"));load(here("Output","women_output_viz.Rdata"))
 ```
 
 ```{r prevalence}
@@ -243,6 +242,9 @@ ggplot2::ggsave(filename = here("Output", "fig_model_plot.jpeg"), plot = fig_mod
                 dpi = 300, width = 14, height = 13, units = "in")
 ```
 
+```{r session info}
+sessioninfo::session_info(pkgs = c("loaded", "attached")[1], to_file = here("Session info","session_info_visualization.txt"))
+```
 
 ```{r turned into function above}
 # fig_men_prev <- men_prev %>% 

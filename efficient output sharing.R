@@ -11,9 +11,7 @@ pacman::p_load(tidyverse,rio,here,gtsummary)
 # Men
 ########
 
-load(here("Output","men_output_smallest.Rdata"))
-
-save(list = setdiff(ls(pattern = "^men_"), "men_original"), file = here("Output", "men_output_smaller.Rdata"))
+load(here("Output","men_output.Rdata"))
 
 # Identify tbl_x objects
 objs_to_butcher <- ls()[sapply(ls(), function(obj_name) {
@@ -26,26 +24,18 @@ for(obj_name in objs_to_butcher) {
   assign(obj_name, tbl_butcher(get(obj_name)))
 }
 
-save(list = setdiff(ls(pattern = "^men_"), c("men_original","men_model_adj_wc")), file = here("Output", "men_output_smallest.Rdata"))
+# Get the list of objects based on your criteria
+viz_objects <- setdiff(ls(pattern = "^men_"), c("men_original", "men_model_adj_wc"))
+
+# Apply as_data_frame() to these objects and overwrite them
+for (obj_name in viz_objects) {
+  assign(obj_name, as_data_frame(get(obj_name)))
+}
+
+save(list = setdiff(ls(pattern = "^men_"), c("men_original","men_model_adj_wc")), file = here("Output", "men_output_viz.Rdata"))
 
 #######################################
-
 rm(list = ls())
-
-# 
-# 
-# pacman::p_load(tidyverse,rio,here,gtsummary)
-# load(here("Output","men_output.Rdata"))
-# 
-# all_objects <- ls(envir = .GlobalEnv)
-# 
-# sizes_in_MB <- sapply(all_objects, function(obj_name) {
-#   object.size(get(obj_name, envir = .GlobalEnv)) / (1024^3)
-# })
-# 
-# print(sizes_in_MB)
-# 
-# z <- men_model_uv_wc %>% tbl_butcher()
 
 ########
 # Women
@@ -53,8 +43,6 @@ rm(list = ls())
 
 load(here("Output","women_output.Rdata"))
 
-save(list = setdiff(ls(pattern = "^women_"), "women_original"), file = here("Output", "women_output_smaller.Rdata"))
-
 # Identify tbl_x objects
 objs_to_butcher <- ls()[sapply(ls(), function(obj_name) {
   obj <- get(obj_name)
@@ -66,5 +54,12 @@ for(obj_name in objs_to_butcher) {
   assign(obj_name, tbl_butcher(get(obj_name)))
 }
 
-save(list = setdiff(ls(pattern = "^women_"), "women_original"), file = here("Output", "women_output_smallest.Rdata"))
+# Get the list of objects based on your criteria
+viz_objects <- setdiff(ls(pattern = "^women_"), c("women_original", "women_model_adj_wc"))
 
+# Apply as_data_frame() to these objects and overwrite them
+for (obj_name in viz_objects) {
+  assign(obj_name, as_data_frame(get(obj_name)))
+}
+
+save(list = setdiff(ls(pattern = "^women_"), c("women_original","women_model_adj_wc")), file = here("Output", "women_output_viz.Rdata"))

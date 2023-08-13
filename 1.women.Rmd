@@ -318,8 +318,42 @@ women_district_wc <- merge(district,district_details, by = "district_id") %>%
          district = str_to_title(district))
 ```
 
+```{r butchering gtsummary objects}
+# gtsummary::tbl_buther will reduce the size of tbl_x objects
+# Identify tbl_x objects
+objs_to_butcher <- ls()[sapply(ls(), function(obj_name) {
+  obj <- get(obj_name)
+  any(c("tbl_regression", "tbl_uvregression", "tbl_svysummary") %in% class(obj))
+})]
+
+# Apply tbl_butcher to those objects and assign back to the same name
+for(obj_name in objs_to_butcher) {
+  assign(obj_name, tbl_butcher(get(obj_name)))
+}
+```
 
 ```{r, exporting estimates for women}
 export(women_district_wc,here("Output","women_dist_obesity_prev_wc.xlsx"))
-save(list = ls(pattern = "^women_"), file = here("Output","women_output.Rdata"))
+
+# save all objects with women_ prefix except "women_original"and "women_model_adj_wc"
+save(list = setdiff(ls(pattern = "^women_"), c("women_original","women_model_adj_wc")), file = here("Output", "women_output.Rdata"))
+
+# save all objects with women_ prefix
+# save(list = ls(pattern = "^women_"), file = here("Output","women_output.Rdata"))
+```
+
+```{r export for visualization}
+# Get the list of objects based on your criteria
+viz_objects <- setdiff(ls(pattern = "^women_"), c("women_original", "women_model_adj_wc"))
+
+# Apply as_data_frame() to these objects and overwrite them
+for (obj_name in viz_objects) {
+  assign(obj_name, as_data_frame(get(obj_name)))
+}
+
+save(list = setdiff(ls(pattern = "^women_"), c("women_original","women_model_adj_wc")), file = here("Output", "women_output_viz.Rdata"))
+```
+
+```{r session info}
+sessioninfo::session_info(pkgs = c("loaded", "attached")[1], to_file = here("Session info","session_info_women.txt"))
 ```
