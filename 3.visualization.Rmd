@@ -8,7 +8,7 @@ date: "`r Sys.Date()`"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools,forestploter)
+pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools,forestploter,forestplot)
 ```
 
 ```{r import}
@@ -137,10 +137,13 @@ fig_prev_plot <- forest(fig_prev[,c(1, 16, 18, 17, 19)],
   edit_plot(row = c(1,2,6,9,14,25,31,38),
             gp = gpar(fontface = "bold"))
 
-# plot(fig_prev_plot)
+plot(fig_prev_plot)
 
 ggplot2::ggsave(filename = here("Output", "fig_prev_plot.jpeg"), plot = fig_prev_plot,
                 dpi = 300, width = 8.5, height = 13, units = "in")
+```
+```{r}
+
 ```
 
 ```{r model}
@@ -230,7 +233,7 @@ fig_model_plot <- forest(fig_model[c(1, 16, 14, 17, 15)],
             ci_column = c(2, 4),
             xlim = list(c(0, 3), c(0, 3)),
             xlab = c(""),
-            vert_line = list(c(1), c(1)),
+            vert_line = list(c(NA,2), c(NA,1)),
             nudge_y = 0.3,
             theme = theme_model) %>%
   edit_plot(row = c(1,5,8,13,24,30,37),
@@ -328,3 +331,39 @@ sessioninfo::session_info(pkgs = c("loaded", "attached")[1], to_file = here("Ses
 # 
 # fig_model <- left_join(fig_model_women, fig_model_men, by = "Characteristic")
 ```
+
+
+```{r}
+# Assuming your original dataframe is named fig_model_men_adj
+forest_data <- fig_model_men_adj[, c("Characteristic", "or_men_adj", "low_ci_men_adj", "high_ci_men_adj")]
+rownames(forest_data) <- forest_data$Characteristic
+
+# Specify the rows to be bold
+rows_to_bold <- c(1, 6, 9, 14, 24, 30, 36)
+
+# Create the forest plot using forestplot function
+fp <- forestplot(
+  fn.ci_norm = fpDrawCircleCI,
+  lty.ci = 2,
+  labeltext = rownames(forest_data),  # Use rownames as labels
+  mean = forest_data$or_men_adj,
+  lower = forest_data$low_ci_men_adj,
+  upper = forest_data$high_ci_men_adj,
+  boxsize= 0.5,
+  title = "Forest Plot of Odds Ratios",
+  xlab = "Odds Ratio",
+  is.summary = rep(FALSE, nrow(forest_data)),  # Set all rows as non-summary initially
+  txt_gp = fpTxtGp(label = list(gpar(fontfamily = "", col = "black"))),
+  col = fpColors(box = "royalblue", line = "darkblue", summary = "royalblue"),
+  zero = 1
+)
+
+# Mark the specified rows as summary (bold)
+for (row in rows_to_bold) {
+  fp$is.summary[row] <- TRUE
+}
+
+fp
+
+```
+
