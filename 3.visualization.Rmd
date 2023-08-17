@@ -21,13 +21,14 @@ process_prev <- function(data, data_wc, data_bmi, gender) {
   fig_prev <- data %>% 
     as_data_frame() %>% 
     rename("Characteristic"=1, "count_prop"=2, "ci"=3) %>% 
-    separate(count_prop, into = c("count", "prop"), sep = " \\(") %>%
+    separate(count_prop, into = c("count", "prop"), sep = " \\("
+             )%>% 
     mutate(
       prop = str_extract(prop, "\\d+\\·?\\d*"),
       prop = str_replace_all(prop, "\\·", "."),
       prop = as.numeric(prop)/100,
-      count = as.numeric(count)
-    ) %>% 
+      count = as.numeric(str_replace_all(count,",", ""))
+    ) %>%
     separate(ci, into = c("low_ci", "high_ci"), sep = ", ") %>%
     mutate(
       low_ci = as.numeric(str_replace(str_remove(low_ci, "%"), "\\·", ".")) / 100,
@@ -40,42 +41,42 @@ process_prev <- function(data, data_wc, data_bmi, gender) {
     )) %>%
     filter(str_detect(Characteristic, "Obese")) %>%
     pivot_wider(
-      names_from = Characteristic, 
+      names_from = Characteristic,
       values_from = c(count, prop, low_ci, high_ci)
-    ) %>% 
-    mutate(Characteristic = "Overall") %>% 
+    ) %>%
+    mutate(Characteristic = "Overall") %>%
     select(Characteristic, everything())
-  
+
   # Code for wc
-  fig_prev_wc <- data_wc %>% 
-    as_data_frame() %>% 
-    select(-contains(c("Non-","Overall"))) %>% 
-    rename("Characteristic"=1, "estimate"=2) %>% 
-    mutate(
-      prop = str_extract(estimate, "^\\d+") %>% as.numeric() / 100,
-      count = str_extract(estimate, "(?<=\\()\\d+(?=\\))") %>% as.numeric(),
-      low_ci = str_extract(estimate, "(?<=\\[)\\d+") %>% as.numeric() / 100,
-      high_ci = str_extract(estimate, "(?<=, )\\d+(?=\\%\\])") %>% as.numeric() / 100
-    ) %>% 
-    select(-estimate) %>% 
+  fig_prev_wc <- data_wc %>%
+    as_data_frame() %>%
+    select(-contains(c("Non-","Overall"))) %>%
+    rename("Characteristic"=1, "estimate"=2) %>%
+    separate(estimate, into = c("prop", "count", "low_ci", "high_ci"), sep = " ") %>% 
+    mutate(prop = str_extract(prop, "\\d+\\·?\\d*") %>% as.numeric() / 100,
+           count = str_extract(count, "\\d{1,3}(?:,\\d{3})*") %>% 
+             gsub(",", "", .) %>% 
+             as.numeric(),
+           low_ci = str_extract(low_ci, "(?<=\\[)\\d+") %>% as.numeric() / 100,
+           high_ci = str_extract(high_ci, "\\d+(?=\\%\\])") %>% as.numeric() / 100) %>% 
     rename_with(~paste0(., paste0("_Obese_wc_", gender)), .cols = -c("Characteristic"))
-  
+
   # Code for bmi
-  fig_prev_bmi <- data_bmi %>% 
-    as_data_frame() %>% 
-    select(-contains(c("Non-","Overall"))) %>% 
-    rename("Characteristic"=1, "estimate"=2) %>% 
-    mutate(
-      prop = str_extract(estimate, "^\\d+") %>% as.numeric() / 100,
-      count = str_extract(estimate, "(?<=\\()\\d+(?=\\))") %>% as.numeric(),
-      low_ci = str_extract(estimate, "(?<=\\[)\\d+") %>% as.numeric() / 100,
-      high_ci = str_extract(estimate, "(?<=, )\\d+(?=\\%\\])") %>% as.numeric() / 100
-    ) %>% 
-    select(-estimate) %>% 
+  fig_prev_bmi <- data_bmi %>%
+    as_data_frame() %>%
+    select(-contains(c("Non-","Overall"))) %>%
+    rename("Characteristic"=1, "estimate"=2) %>%
+    separate(estimate, into = c("prop", "count", "low_ci", "high_ci"), sep = " ") %>% 
+    mutate(prop = str_extract(prop, "\\d+\\·?\\d*") %>% as.numeric() / 100,
+           count = str_extract(count, "\\d{1,3}(?:,\\d{3})*") %>% 
+             gsub(",", "", .) %>% 
+             as.numeric(),
+           low_ci = str_extract(low_ci, "(?<=\\[)\\d+") %>% as.numeric() / 100,
+           high_ci = str_extract(high_ci, "\\d+(?=\\%\\])") %>% as.numeric() / 100) %>%
     rename_with(~paste0(., paste0("_Obese_bmi_", gender)), .cols = -c("Characteristic"))
-  
+
   # Final assembly
-  fig_prev <- left_join(fig_prev_wc, fig_prev_bmi, by = "Characteristic") %>% 
+  fig_prev <- left_join(fig_prev_wc, fig_prev_bmi, by = "Characteristic") %>%
     bind_rows(fig_prev, .) %>%
     select(-paste0("count_Obese_bmi_", gender))
   
@@ -90,29 +91,43 @@ fig_prev <- left_join(fig_prev_women, fig_prev_men, by = "Characteristic")
 ```
 
 ```{r prevalence figure}
-# indent the subgroup if there is a number in the count_Obese_wc_women column
-fig_prev$Characteristic <- ifelse(is.na(fig_prev$count_Obese_wc_women), 
-                                  fig_prev$Characteristic, paste0("     ", fig_prev$Characteristic))
+# indent the subgroup
+indent_check <- c("Overall","Age category", "Type of Residence", "Highest Education Level", 
+                     "Religion", "Wealth Index", "Caste", "Frequency of Eating Meat")
+
+fig_prev$Characteristic <- ifelse(fig_prev$Characteristic %in% indent_check, fig_prev$Characteristic,
+                                   paste0("     ", fig_prev$Characteristic))
 
 # NA to blank or NA will be transformed to character.
-fig_prev$n1 <- ifelse(is.na(fig_prev$count_Obese_wc_women), "", fig_prev$count_Obese_wc_women)
-fig_prev$n2 <- ifelse(is.na(fig_prev$count_Obese_wc_men), "", fig_prev$count_Obese_wc_men)
+fig_prev$"n[women]" <- ifelse(is.na(fig_prev$count_Obese_wc_women), "", fig_prev$count_Obese_wc_women)
+fig_prev$"n[men]" <- ifelse(is.na(fig_prev$count_Obese_wc_men), "", fig_prev$count_Obese_wc_men)
 
 
 # Add two blank column for CI
-fig_prev$`Women` <- paste(rep(" ", 20), collapse = " ")
-fig_prev$`Men` <- paste(rep(" ", 20), collapse = " ")
+fig_prev$`Prevalence` <- paste(rep(" ", 20), collapse = " ")
+fig_prev$`Prevalence ` <- paste(rep(" ", 20), collapse = " ")
 
 # Set-up theme
-theme_prev <- forest_theme(base_size = 10,
-                   refline_lty = "solid",
-                   ci_pch = c(15, 18),
-                   ci_col = c("#377eb8", "#4daf4a"),
-                   footnote_col = "blue",
-                   legend_name = "Group",
-                   legend_value = c("Waist circumference", "Body mass index"),
-                   vertline_lty = c("dashed"),
-                   vertline_col = c("#d6604d"))
+theme_prev <- forest_theme(base_size = 13,
+                           base_family = "Helevetica",
+                           refline_lwd = 0,
+                           refline_lty = "solid",
+                           ci_pch = c(2, 1),
+                           ci_lty = c("solid","solid"),
+                           ci_col = c("#8D0522","#05668D"),
+                           ci_lwd = c(1.3,0.85),
+                           ci_Theight = NULL,
+                           footnote_col = "blue",
+                           legend_name = "Criterion",
+                           legend_value = c("Waist circumference   ", " Body mass index"),
+                           legend_position = "bottom",
+                           vertline_lty = c("dashed"),
+                           vertline_lwd = 1,
+                           vertline_col = c("#7ABA69"),
+                           colhead=list(fg_params=list(
+                             hjust=c(0.83, 0.5, 0.5, 0.5, 0.5),
+                             x=0.5, parse=T)))
+                           
 
 fig_prev_plot <- forest(fig_prev[,c(1, 16, 18, 17, 19)],
             est = list(fig_prev$prop_Obese_wc_women,
@@ -124,26 +139,58 @@ fig_prev_plot <- forest(fig_prev[,c(1, 16, 18, 17, 19)],
                        fig_prev$low_ci_Obese_wc_men,
                        fig_prev$low_ci_Obese_bmi_men), 
             upper = list(fig_prev$high_ci_Obese_wc_women,
-                       fig_prev$high_ci_Obese_bmi_women,
-                       fig_prev$high_ci_Obese_wc_men,
-                       fig_prev$high_ci_Obese_bmi_men), 
+                         fig_prev$high_ci_Obese_bmi_women,
+                         fig_prev$high_ci_Obese_wc_men,
+                         fig_prev$high_ci_Obese_bmi_men), 
             ci_column = c(3, 5),
             xlim = list(c(0, 1), c(0, 1)),
             xlab = c(""),
+            ticks_at = list(c(0, 0.25, 0.5, 1),c(0, 0.25, 0.5, 1)),
             vert_line = list(c(fig_prev$prop_Obese_wc_women[fig_prev$Characteristic == "Overall"]), 
                              c(fig_prev$prop_Obese_wc_men[fig_prev$Characteristic == "Overall"])),
-            nudge_y = 0.3,
+            nudge_y = 0.25,
             theme = theme_prev) %>% 
+  
+  # bold category heading
   edit_plot(row = c(1,2,6,9,14,25,31,38),
-            gp = gpar(fontface = "bold"))
+            gp = gpar(fontface = "bold")) %>% 
+  # right aligned numbers
+  edit_plot(col = c(2,3,4,5), which = "text",
+            hjust = unit(1, "npc"), 
+            x = unit(0.9, "npc")) %>% 
+  # all background white
+  edit_plot(row = c(1:42), which = "background",
+            gp = gpar(fill = "white")) %>% 
+  # background to category headings
+  edit_plot(row = c(1,2,6,9,14,25,31,38), which = "background",
+            gp = gpar(fill = "lightgray")) %>% 
+  # background to overall row
+  edit_plot(col = 1:5, row = 1, which = "background", 
+            gp = gpar(fill = "#f6eff7")) %>%
+  # header join: women and men
+  insert_text(text = "Women",col = 2:3,part = "header",
+              gp = gpar(fontface = "bold")) %>%
+  add_text(text = "Men",col = 4:5,part = "header",row = 1,
+           gp = gpar(fontface = "bold")) %>%
+   edit_plot(part = "header", row = 2,
+            gp = gpar(fontface = "bold")) %>% 
+  
+  # top border for table
+  add_border(part = "header", row = 1, where = "top",
+             gp = gpar(lwd = .7)) %>% 
+  # bottom border for header
+  add_border(part = "header", row = 2, where = "bottom",
+             gp = gpar(lwd = .7)) %>% 
+  # border for women header
+  add_border(part = "header", row = 1, col = 2:3,
+             gp = gpar(lwd = 0.8)) %>% 
+  # border for men header
+  add_border(part = "header", row = 1, col = 4:5,
+             gp = gpar(lwd = 0.8))
 
-plot(fig_prev_plot)
 
-ggplot2::ggsave(filename = here("Output", "fig_prev_plot.jpeg"), plot = fig_prev_plot,
-                dpi = 300, width = 8.5, height = 13, units = "in")
-```
-```{r}
-
+ggplot2::ggsave(filename = here("Output", "fig_prev_plot.svg"), plot = fig_prev_plot,
+                dpi = 300, width = 8.3, height = 13.6, units = "in")
 ```
 
 ```{r model}
@@ -183,7 +230,7 @@ fig_model <- left_join(fig_model_women_adj, fig_model_women_uv, by = "Characteri
 ```{r model figure}
 # indent the subgroup
 indent_check <- c("Age category", "Type of Residence", "Highest Education Level", 
-                     "religion", "Wealth Index", "Caste", "Frequency of Eating Meat")
+                     "Religion", "Wealth Index", "Caste", "Frequency of Eating Meat")
 
 fig_model$Characteristic <- ifelse(fig_model$Characteristic %in% indent_check, fig_model$Characteristic,
                                    paste0("     ", fig_model$Characteristic))
