@@ -98,8 +98,8 @@ women <- women %>%
          education = fct_relevel(education, c("No education","Primary","Secondary","Higher")),
          wealth = fct_relevel(wealth, c("Poorest","Poorer","Middle","Richer","Richest"))
   ) %>% 
-  mutate(religion = fct_relevel(fct_recode(religion, "Buddhist" = "Buddhist / neo-buddhist", "Parsi" = "Parsi / zoroastrian"), 
-                                c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Parsi","Jewish","Other","No religion")),
+  mutate(religion = fct_relevel(fct_recode(religion, "Buddhist" = "Buddhist / neo-buddhist", "Other" = "Parsi / zoroastrian", "Other" = "Jewish", "Other" = "No religion"), 
+                                c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Other")),
          
          caste = fct_relevel(fct_recode(caste, "Other backward class" = "Obc"), 
                              c("Schedule caste","Schedule tribe","Other backward class","Don't know","None of them" )),
