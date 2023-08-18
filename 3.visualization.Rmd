@@ -86,7 +86,8 @@ process_prev <- function(data, data_wc, data_bmi, gender) {
 fig_prev_women <- process_prev(women_prev, women_prev_wc, women_prev_bmi, "women")
 fig_prev_men <- process_prev(men_prev, men_prev_wc, men_prev_bmi, "men")
 
-fig_prev <- left_join(fig_prev_women, fig_prev_men, by = "Characteristic")
+fig_prev <- left_join(fig_prev_women, fig_prev_men, by = "Characteristic") %>% 
+  filter(`Characteristic` != "NA")
 
 ```
 
@@ -150,7 +151,7 @@ fig_prev_plot <- forest(fig_prev[,c(1, 16, 18, 17, 19)],
                         nudge_y = 0.25,
                         theme = theme_prev) %>% 
   # bold category heading
-  edit_plot(row = c(1,2,6,9,14,25,31,38),
+  edit_plot(row = c(1,2,6,9,14,25,31,37),
             gp = gpar(fontface = "bold")) %>% 
   # right aligned numbers
   edit_plot(col = c(2,3,4,5), which = "text",
@@ -160,7 +161,7 @@ fig_prev_plot <- forest(fig_prev[,c(1, 16, 18, 17, 19)],
   edit_plot(row = c(1:42), which = "background",
             gp = gpar(fill = "white")) %>% 
   # background to category headings
-  edit_plot(row = c(1,2,6,9,14,25,31,38), which = "background",
+  edit_plot(row = c(1,2,6,9,14,25,31,37), which = "background",
             gp = gpar(fill = "lightgray")) %>% 
   # background to overall row
   edit_plot(col = 1:5, row = 1, which = "background", 
@@ -272,8 +273,8 @@ theme_model <- forest_theme(base_size = 13,
                             vertline_col = c("#EEB819"),
                             colhead=list(fg_params=list(
                               hjust=c(0.83, 0.5, 0.5, 0.5, 0.5),
-                              x=0.5, parse=T)),
-)
+                              x=0.5, parse=T))
+                            )
 
 fig_model_plot <- forest(fig_model[,c(1, 14, 16, 15, 17)],
                          est = list(fig_model$or_women_uv,
@@ -332,6 +333,88 @@ ggplot2::ggsave(filename = here("Output", "fig_model_plot.svg"), plot = fig_mode
                 dpi = 300, width = 13, height = 13, units = "in")
 
 ```
+
+```{r missing caste values}
+process_df <- function(df, name) {
+  # Filter rows where "**Characteristic**" contains the string "NA"
+  df <- df[df$`**Characteristic**` == "NA", ]
+  
+  # Clean up column names
+  colnames(df) <- sapply(colnames(df), function(x) {
+    if (grepl("Non-obese", x)) "Non-obese"
+    else if (grepl("Obese", x)) "Obese"
+    else if (grepl("Overall", x)) "Total"
+    else x
+  })
+  
+  # Clean df_name column based on provided conditions
+  cleaned_name <- switch(name,
+    "women_prev_wc" = "Women Waist",
+    "women_prev_bmi" = "Women BMI",
+    "men_prev_wc" = "Men Waist",
+    "men_prev_bmi" = "Men BMI",
+    name # default case
+  )
+  
+  df$missing <- cleaned_name
+  
+  return(df)
+}
+
+# Process & bind all data frames together
+caste_missing_values <- bind_rows(process_df(women_prev_wc, "women_prev_wc"),
+                           process_df(women_prev_bmi, "women_prev_bmi"),
+                           process_df(men_prev_wc, "men_prev_wc"),
+                           process_df(men_prev_bmi, "men_prev_bmi")) %>% 
+  select(-`**Characteristic**`)
+
+
+# Helper function to convert character values to numeric
+convert_to_numeric <- function(value) {
+  as.numeric(gsub(",", "", value))
+}
+
+# Adjusting the extraction function
+extract_values <- function(category, metric) {
+  value <- caste_missing_values %>%
+    filter(missing == category) %>%
+    pull(!!as.name(metric))
+  convert_to_numeric(value)
+}
+
+# Women Waist
+women_waist_total <- extract_values("Women Waist", "Total")
+women_waist_obese <- extract_values("Women Waist", "Obese")
+
+# Women BMI
+women_bmi_total <- extract_values("Women BMI", "Total")
+women_bmi_obese <- extract_values("Women BMI", "Obese")
+
+# Men Waist
+men_waist_total <- extract_values("Men Waist", "Total")
+men_waist_obese <- extract_values("Men Waist", "Obese")
+
+# Men BMI
+men_bmi_total <- extract_values("Men BMI", "Total")
+men_bmi_obese <- extract_values("Men BMI", "Obese")
+
+sprintf(
+  "Caste data was missing for %s women and %s men, respectively.",
+  formatC(women_waist_total, format="d", big.mark=','),
+  formatC(men_waist_total, format="d", big.mark=',')
+)
+sprintf(
+  "Caste data was missing for %s (%.2f%%) and %s (%.2f%%) women classified as obese based on waist and BMI, respectively. For men, caste was missing for %s (%.2f%%) and %s (%.2f%%) individuals classified as obese based on waist and BMI, respectively.", 
+  formatC(women_waist_obese, format="d", big.mark=','), 
+  (women_waist_obese/women_waist_total)*100, 
+  formatC(women_bmi_obese, format="d", big.mark=','), 
+  (women_bmi_obese/women_bmi_total)*100,
+  formatC(men_waist_obese, format="d", big.mark=','), 
+  (men_waist_obese/men_waist_total)*100, 
+  formatC(men_bmi_obese, format="d", big.mark=','), 
+  (men_bmi_obese/men_bmi_total)*100)
+```
+
 
 ```{r session info}
 sessioninfo::session_info(pkgs = c("loaded", "attached")[1], to_file = here("Session info","session_info_visualization.txt"))
