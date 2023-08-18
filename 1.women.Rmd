@@ -93,7 +93,7 @@ women <- women_original %>%
 # capitalizing values of factor variables
 women <- women %>%
   mutate(across(where(is.factor), ~factor(str_to_sentence(as.character(.))))) %>% 
-  mutate(meat = fct_relevel(meat, c("Never","Daily","Occasionally","Weekly")),
+  mutate(meat = fct_relevel(meat, c("Never","Occasionally","Weekly","Daily")),
          residence = fct_relevel(residence, c("Rural","Urban")),
          education = fct_relevel(education, c("No education","Primary","Secondary","Higher")),
          wealth = fct_relevel(wealth, c("Poorest","Poorer","Middle","Richer","Richest"))
