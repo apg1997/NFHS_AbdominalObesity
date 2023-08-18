@@ -42,10 +42,10 @@ men <- import_men %>%
   # BMI - 9998 flagged cases to NA
   mutate(hb40 = na_if(hb40, 9998)) %>% 
   # waist circumference - 999.5 and 999.6 to NA
-  mutate(s305 = replace(smb305, smb305 %in% c(999.5,999.6), NA)) %>% 
+  mutate(smb305 = replace(smb305, smb305 %in% c(999.5,999.6), NA)) %>% 
   
    # filtering NA in waist circumference
-  filter(!is.na(s305)) %>% 
+  filter(!is.na(smb305)) %>% 
   
   # filtering where (height and weight) or BMI is not available
   filter(!((is.na(hb2)|is.na(hb3))&is.na(hb40))) %>% 
@@ -155,10 +155,10 @@ transformations <- list(
     function(data) {mutate(data, hb40 = na_if(hb40, 9998))},
   
   "Step 4 - Waist circumference recoding" = 
-    function(data) {mutate(data, s305 = replace(smb305, smb305 %in% c(999.5, 999.6), NA))},
+    function(data) {mutate(data, smb305 = replace(smb305, smb305 %in% c(999.5, 999.6), NA))},
   
   "Step 5 - Filtering NA in waist circumference" = 
-    function(data) {filter(data, !is.na(s305))},
+    function(data) {filter(data, !is.na(smb305))},
   
   "Step 6 - Filtering where (height and weight) or BMI is not available" = 
     function(data) {filter(data, !((is.na(hb2)|is.na(hb3))&is.na(hb40)))},
