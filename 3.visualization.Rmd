@@ -151,7 +151,7 @@ fig_prev_plot <- forest(fig_prev[,c(1, 16, 18, 17, 19)],
                         nudge_y = 0.25,
                         theme = theme_prev) %>% 
   # bold category heading
-  edit_plot(row = c(1,2,6,9,14,25,31,37),
+  edit_plot(row = c(1,2,6,9,14,22,28,34),
             gp = gpar(fontface = "bold")) %>% 
   # right aligned numbers
   edit_plot(col = c(2,3,4,5), which = "text",
@@ -161,7 +161,7 @@ fig_prev_plot <- forest(fig_prev[,c(1, 16, 18, 17, 19)],
   edit_plot(row = c(1:42), which = "background",
             gp = gpar(fill = "white")) %>% 
   # background to category headings
-  edit_plot(row = c(1,2,6,9,14,25,31,37), which = "background",
+  edit_plot(row = c(1,2,6,9,14,22,28,34), which = "background",
             gp = gpar(fill = "lightgray")) %>% 
   # background to overall row
   edit_plot(col = 1:5, row = 1, which = "background", 
@@ -297,7 +297,7 @@ fig_model_plot <- forest(fig_model[,c(1, 14, 16, 15, 17)],
                          nudge_y = 0.25,
                          theme = theme_model) %>%
   # bold category heading
-  edit_plot(row = c(1,5,8,13,24,30,36),
+  edit_plot(row = c(1,5,8,13,21,27,33),
             gp = gpar(fontface = "bold")) %>% 
   # left aligned numbers
   edit_plot(col = c(2,3,4,5), which = "text",
@@ -307,7 +307,7 @@ fig_model_plot <- forest(fig_model[,c(1, 14, 16, 15, 17)],
   edit_plot(row = c(1:40), which = "background",
             gp = gpar(fill = "white")) %>%
   # background to category headings
-  edit_plot(row = c(1,5,8,13,24,30,36), which = "background",
+  edit_plot(row = c(1,5,8,13,21,27,33), which = "background",
             gp = gpar(fill = "lightgray")) %>% 
   # header join: women and men
   insert_text(text = "Women",col = 2:3,part = "header",
