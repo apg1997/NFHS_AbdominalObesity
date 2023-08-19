@@ -8,7 +8,7 @@ date: "`r Sys.Date()`"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools)
+pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools,sessioninfo)
 ```
 
 ```{r import, include=F}
@@ -93,13 +93,13 @@ women <- women_original %>%
 # capitalizing values of factor variables
 women <- women %>%
   mutate(across(where(is.factor), ~factor(str_to_sentence(as.character(.))))) %>% 
-  mutate(meat = fct_relevel(meat, c("Never","Daily","Occasionally","Weekly")),
+  mutate(meat = fct_relevel(meat, c("Never","Occasionally","Weekly","Daily")),
          residence = fct_relevel(residence, c("Rural","Urban")),
          education = fct_relevel(education, c("No education","Primary","Secondary","Higher")),
          wealth = fct_relevel(wealth, c("Poorest","Poorer","Middle","Richer","Richest"))
   ) %>% 
-  mutate(religion = fct_relevel(fct_recode(religion, "Buddhist" = "Buddhist / neo-buddhist", "Parsi" = "Parsi / zoroastrian"), 
-                                c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Parsi","Jewish","Other","No religion")),
+  mutate(religion = fct_relevel(fct_recode(religion, "Buddhist" = "Buddhist / neo-buddhist", "Other" = "Parsi / zoroastrian", "Other" = "Jewish", "Other" = "No religion"), 
+                                c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Other")),
          
          caste = fct_relevel(fct_recode(caste, "Other backward class" = "Obc"), 
                              c("Schedule caste","Schedule tribe","Other backward class","Don't know","None of them" )),

@@ -42,10 +42,10 @@ men <- import_men %>%
   # BMI - 9998 flagged cases to NA
   mutate(hb40 = na_if(hb40, 9998)) %>% 
   # waist circumference - 999.5 and 999.6 to NA
-  mutate(s305 = replace(smb305, smb305 %in% c(999.5,999.6), NA)) %>% 
+  mutate(smb305 = replace(smb305, smb305 %in% c(999.5,999.6), NA)) %>% 
   
    # filtering NA in waist circumference
-  filter(!is.na(s305)) %>% 
+  filter(!is.na(smb305)) %>% 
   
   # filtering where (height and weight) or BMI is not available
   filter(!((is.na(hb2)|is.na(hb3))&is.na(hb40))) %>% 
@@ -104,13 +104,13 @@ men <- men_original %>%
 # capitalizing values of factor variables
 men <- men %>%
   mutate(across(where(is.factor), ~factor(str_to_sentence(as.character(.))))) %>% 
-  mutate(meat = fct_relevel(meat, c("Never","Daily","Occasionally","Weekly")),
+  mutate(meat = fct_relevel(meat, c("Never","Occasionally","Weekly","Daily")),
          residence = fct_relevel(residence, c("Rural","Urban")),
          education = fct_relevel(education, c("No education","Primary","Secondary","Higher")),
          wealth = fct_relevel(wealth, c("Poorest","Poorer","Middle","Richer","Richest"))
   ) %>% 
-  mutate(religion = fct_relevel(fct_recode(religion, "Buddhist" = "Buddhist / neo-buddhist", "Parsi" = "Parsi / zoroastrian"), 
-                                c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Parsi","Jewish","Other","No religion")),
+  mutate(religion = fct_relevel(fct_recode(religion, "Buddhist" = "Buddhist / neo-buddhist", "Other" = "Parsi / zoroastrian", "Other" = "Jewish", "Other" = "No religion"), 
+                                c("Hindu", "Muslim", "Christian", "Sikh","Buddhist","Jain","Other")),
          
          caste = fct_relevel(fct_recode(caste, "Other backward class" = "Obc"), 
                              c("Schedule caste","Schedule tribe","Other backward class","Don't know","None of them" )),
@@ -155,10 +155,10 @@ transformations <- list(
     function(data) {mutate(data, hb40 = na_if(hb40, 9998))},
   
   "Step 4 - Waist circumference recoding" = 
-    function(data) {mutate(data, s305 = replace(smb305, smb305 %in% c(999.5, 999.6), NA))},
+    function(data) {mutate(data, smb305 = replace(smb305, smb305 %in% c(999.5, 999.6), NA))},
   
   "Step 5 - Filtering NA in waist circumference" = 
-    function(data) {filter(data, !is.na(s305))},
+    function(data) {filter(data, !is.na(smb305))},
   
   "Step 6 - Filtering where (height and weight) or BMI is not available" = 
     function(data) {filter(data, !((is.na(hb2)|is.na(hb3))&is.na(hb40)))},
