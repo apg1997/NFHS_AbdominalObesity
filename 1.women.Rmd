@@ -335,6 +335,7 @@ for(obj_name in objs_to_butcher) {
 ```{r, exporting estimates for women}
 export(women_district_wc,here("Output","women_dist_obesity_prev_wc.xlsx"))
 
+export(women_state_wc_df,here("Output","women_state_obesity_prev_wc.xlsx"))
 # save all objects with women_ prefix except "women_original"and "women_model_adj_wc"
 save(list = setdiff(ls(pattern = "^women_"), c("women_original","women_model_adj_wc")), file = here("Output", "women_output.Rdata"))
 

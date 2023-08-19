@@ -202,3 +202,103 @@ states <- geojson_sf("shapefiles/geoBoundaries-IND-ADM1_simplified.geojson")
 menplot_districts + 
   geom_sf(data = states, color = "black", fill = NA) 
 ```
+```{r}
+
+men_state <- import(here("Output","men_state_obesity_prev_wc.xlsx"))
+women_state <- import(here("Output","women_state_obesity_prev_wc.xlsx"))
+
+```
+
+
+```{r, merging men and womens district level estimates}
+merged_data_state <- merge(men_state, women_state, by = c("state"), suffixes = c("_men", "_women"))
+```
+
+```{r}
+states_corrected <- states %>%
+  mutate(
+    shapeName = case_when(
+      shapeName == "Mahārāshtra" ~ "Maharashtra",
+      shapeName == "Tamil Nādu" ~ "Tamil nadu",
+      shapeName == "Chhattīsgarh" ~ "Chhattisgarh",
+      shapeName == "Gujarāt" ~ "Gujarat",
+      shapeName == "Dādra and Nagar Haveli and Damān and Diu" ~ "Dadra & nagar haveli and daman & diu",
+      shapeName == "Himāchal Pradesh" ~ "Himachal pradesh",
+      shapeName == "Jammu and Kashmīr" ~ "Jammu & kashmir",
+      shapeName == "Bihār" ~ "Bihar",
+      shapeName == "Ladākh" ~ "Ladakh",
+      shapeName == "Rājasthān" ~ "Rajasthan",
+      shapeName == "Telangāna" ~ "Telangana",
+      shapeName == "Andhra Pradesh" ~ "Andhra pradesh",
+      shapeName == "Arunāchal Pradesh" ~ "Arunachal pradesh",
+      shapeName == "Meghālaya" ~ "Meghalaya",
+      shapeName == "Jhārkhand" ~ "Jharkhand",
+      shapeName == "Manipur" ~ "Manipur",
+      shapeName == "Karnātaka" ~ "Karnataka",
+      shapeName == "Uttarākhand" ~ "Uttarakhand",
+      shapeName == "Uttar Pradesh" ~ "Uttar pradesh",
+      shapeName == "Nāgāland" ~ "Nagaland",
+      shapeName == "Lakshadweep" ~ "Lakshadweep",
+      shapeName == "Sikkim" ~ "Sikkim",
+      shapeName == "Tripura" ~ "Tripura",
+      shapeName == "West Bengal" ~ "West bengal",
+      shapeName == "Odisha" ~ "Odisha",
+      shapeName == "Andaman and Nicobar Islands" ~ "Andaman & nicobar islands",
+      shapeName == "Puducherry" ~ "Puducherry",
+      shapeName == "Punjab" ~ "Punjab",
+      shapeName == "Haryāna" ~ "Haryana",
+      shapeName == "Delhi" ~ "Nct of delhi",
+      shapeName == "Madhya Pradesh" ~ "Madhya pradesh",
+      shapeName == "Chandīgarh" ~ "Chandigarh",
+
+      # Add more corrections as needed
+      TRUE ~ shapeName
+    )
+  )
+merged_data_with_state <- merge(merged_data_state, states_corrected, by.x = "state", by.y = "shapeName")
+
+```
+
+```{r}
+merged_data_with_shape_state_sf <- st_as_sf(merged_data_with_shape_state)
+
+```
+
+```{r}
+# Create the static map using ggplot2
+menplot_states <- ggplot() + 
+  # geom_spatraster_rgb(data = basemap) +
+  geom_sf(data = merged_data_with_shape_state_sf, aes(fill = prev_obese_men)) +
+  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
+  # scale_fill_fermenter(direction= +1, type = "seq")+
+    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
+  # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
+  theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  labs(title = "Prevalence of Abdominal Obesity in Men by state",fill = "Prevalence in % age")
+
+
+menplot_states
+
+ggsave("output_men_states.svg", plot = menplot_states, device = "svg", width = 10, height = 8, units = "in")
+
+```
+
+```{r}
+# Create the static map using ggplot2
+womenplot_states <- ggplot() + 
+  # geom_spatraster_rgb(data = basemap) +
+  geom_sf(data = merged_data_with_shape_state_sf, aes(fill = prev_obese_women)) +
+  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_women)))+
+  # scale_fill_ferwomenter(direction= +1, type = "seq")+
+    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
+  # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
+  theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  labs(title = "Prevalence of Abdominal Obesity in women by state",fill = "Prevalence in % age")
+
+
+womenplot_states
+
+ggsave("output_women_states.svg", plot = womenplot_states, device = "svg", width = 10, height = 8, units = "in")
+
+```
+
