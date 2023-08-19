@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
 p_load(base, broom, dplyr, geojsonio, ggmap, ggplot2, ggthemes,
   grDevices, htmlwidgets, leaflet, maptiles, mapview,
-  pacman, RColorBrewer, sf, tidyterra, tmap, tmaptools, openxlsx, wesanderson,rio,janitor,here)
+  pacman, RColorBrewer, sf, tidyterra, tmap, tmaptools, openxlsx, wesanderson,rio,janitor,here,ggpattern)
 
 ```
 
@@ -111,8 +111,8 @@ gradient_colors <- colorRampPalette(as.character(wes_palette))(5)
 # Create the static map using ggplot2
 menplot_districts <- ggplot() + 
   # geom_spatraster_rgb(data = basemap) +
-  geom_sf(data = underlay_map) +
-  geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
+  geom_sf(data = underlay_map,aes(color ="No Data",pattern = "stripe")) +
+    scale_color_manual("",values = c("No Data" = "black"),guide = guide_legend(override.aes = list(linetype = "solid", shape = NA))) +  geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
   # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
   # scale_fill_fermenter(direction= +1, type = "seq")+
     scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
@@ -131,7 +131,8 @@ ggsave("output_men.svg", plot = menplot_districts, device = "svg", width = 10, h
 # Create the static map using ggplot2
 womenplot_districts <- ggplot() + 
   # geom_spatraster_rgb(data = basemap) +
-  geom_sf(data = underlay_map) +
+  geom_sf(data = underlay_map,aes(color ="No Data")) +
+  scale_color_manual("",values = c("No Data" = "black"),guide = guide_legend(override.aes = list(linetype = "solid", shape = NA))) +
   geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_women)) +
   # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_women)))+
   # scale_fill_ferwomenter(direction= +1, type = "seq")+
