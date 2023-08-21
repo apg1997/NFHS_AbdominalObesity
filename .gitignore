@@ -17,9 +17,8 @@
 # R Project files
 !**/*.Rproj
 
-!shapefiles/*.geojson
+# shapefiles
+!Data_raw/shapefile/*.geojson
+!Data_raw/sdr_subnational_boundaries_2023-08-21/shps/sdr_subnational_boundaries2.*
 
-!shapefiles/*.shp
-
-!shps/*.shp
 .Rproj.user
