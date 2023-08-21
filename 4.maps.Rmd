@@ -8,43 +8,38 @@ date: "`r Sys.Date()`"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-p_load(base, broom, dplyr, geojsonio, ggmap, ggplot2, ggthemes,
-  grDevices, htmlwidgets, leaflet, maptiles, mapview,
-  pacman, RColorBrewer, sf, tidyterra, tmap, tmaptools, openxlsx, wesanderson,rio,janitor,here,ggpattern)
-
+p_load(tidyverse, rio, janitor, here, geojsonio, ggmap, ggthemes, maptiles, wesanderson, RColorBrewer, sf, tidyterra, svglite)
 ```
 
+```{r loading  shapefile, include=FALSE}
+# DHS shapefile for India 2020 DHS, available at https://spatialdata.dhsprogram.com/boundaries/#view=table&countryId=IA
+# Unzip in the Data_raw folder
+district_shapefile <- sf::st_read(here("Data_raw","sdr_subnational_boundaries_2023-08-21","shps","sdr_subnational_boundaries2.shp"))
 
-
-```{r}
-# library(pacman)
-# pacman::p_load(tidyselect, here, ISOcodes, survey, expss, tidyverse,
-#        haven, dplyr, ggplot2, labelled, rmarkdown, readxl, naniar,
-#        ggiraph, xlsx, stringdist, foreign, here, janitor)
-# pacman::p_load(tidyverse, lubridate, rio, janitor, here, gtsummary,writexl,openxlsx, mapview)
-# p_load(sf,dplyr,ggthemes,plotly,leaflet,svglite,geojsonio,broom,scales,ggpattern,maptools,htmlwidgets,wesanderson)
-# 
-# package_names <- c(
-#   "base", "broom", "dplyr", "geojsonio", "ggmap", "ggplot2", "ggthemes",
-#   "grDevices", "htmlwidgets", "leaflet", "maptiles", "mapview",
-#   "pacman", "RColorBrewer", "sf", "tidyterra", "tmap", "tmaptools"
-# )
-
+# background map of India with correct geography
+underlay_map <- st_read(here("Data_raw","shapefile","india-composite.geojson"))
+# map with state boundaries
+states <- geojson_sf("shapefiles/geoBoundaries-IND-ADM1_simplified.geojson")
 ```
 
-```{r, loading district files}
-men <- import(here("Output","men_dist_obesity_prev_wc.xlsx"))
-women <- import(here("Output","women_dist_obesity_prev_wc.xlsx"))
+```{r importing obesity estimates}
+state_men <- import(here("Output","men_state_obesity_prev_wc.xlsx"))
+state_women <- import(here("Output","women_state_obesity_prev_wc.xlsx"))
 
+district_men <- import(here("Output","men_dist_obesity_prev_wc.xlsx"))
+district_women <- import(here("Output","women_dist_obesity_prev_wc.xlsx"))
 ```
 
+############
+#District
+############
 
-```{r, merging men and womens district level estimates}
-merged_data <- merge(men, women, by = c("district_id","state","district"), suffixes = c("_men", "_women"))
+```{r merging men and womens district level estimates}
+district_merged_data <- merge(district_men, district_women, by = c("district_id","state","district"), suffixes = c("_men", "_women"))
 ```
 
-```{r, cleaning district names to match with DHS shapefile}
-merged_data <- merged_data %>%
+```{r cleaning district names to match with DHS shapefile}
+district_merged_data <- district_merged_data %>%
   mutate(
     district = case_when(
       district == "North  & Middle Andaman" ~ "North & Middle Andaman",
@@ -64,30 +59,15 @@ merged_data <- merged_data %>%
   )
 ```
 
-
-```{r, loading dhs shapefile,include=FALSE}
-p_load(sf,dplyr,ggthemes)
-
-shapefile <- st_read("shps/sdr_subnational_boundaries2.shp")
-
-```
-
-```{r, renaming district and state name in dhs shapefile}
-shapefile <- shapefile %>%
+```{r renaming district and state name in dhs shapefile}
+district_shapefile <- district_shapefile %>%
   rename(district = REGNAME, state = OTHREGNA)
+
+# merging district shapefile with district-level estimates
+district_merged_data_with_shape <- merge(district_merged_data, district_shapefile, by = c("district","state"))
 ```
 
-```{r, merging district shapefile with district-level estimates}
-merged_data_with_shape <- merge(merged_data, shapefile, by = c("district","state"))
-
-```
-
-
-```{r, loading in background map of India with correct geography, include=FALSE}
-underlay_map <- st_read("shapefiles/india-composite.geojson")
-```
-```{r, manipulating shapefiles for concurrence}
-p_load(ggmap,maptiles,tidyterra)
+```{r manipulating shapefiles for concurrence}
 map_extent <- as.numeric(st_bbox(underlay_map))
 grid_box = c(map_extent[1], map_extent[2], map_extent[3], map_extent[4])
 class(grid_box) <- "bbox"
@@ -96,10 +76,9 @@ grid_poly <- st_as_sfc(grid_box) %>% st_set_crs(4326) %>%
 # basemap <- get_tiles(grid_poly, provider = "Stamen.Watercolor", crop = TRUE)
 ```
 
-
-```{r, converting to sf object and plotting mens estimates choropleth}
+```{r converting to sf object and plotting mens estimates choropleth}
 # Create an sf object with valid geometry
-merged_data_with_shape_sf <- st_as_sf(merged_data_with_shape)
+district_merged_data_with_shape_sf <- st_as_sf(district_merged_data_with_shape)
 
 wes_palette <- c('#edf8b1','#7fcdbb','#2c7fb8')
 
@@ -109,113 +88,46 @@ gradient_colors <- colorRampPalette(as.character(wes_palette("BottleRocket2", ty
 gradient_colors <- colorRampPalette(as.character(wes_palette))(5)
 
 # Create the static map using ggplot2
-menplot_districts <- ggplot() + 
-  # geom_spatraster_rgb(data = basemap) +
+district_menplot <- ggplot() + 
   geom_sf(data = underlay_map,aes(color ="No Data",pattern = "stripe")) +
-    scale_color_manual("",values = c("No Data" = "black"),guide = guide_legend(override.aes = list(linetype = "solid", shape = NA))) +  geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
-  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
-  # scale_fill_fermenter(direction= +1, type = "seq")+
-    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
-  # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
-  theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  scale_color_manual("",values = c("No Data" = "black"),
+                     guide = guide_legend(override.aes = list(linetype = "solid", shape = NA))) +  
+  geom_sf(data = district_merged_data_with_shape_sf, aes(fill = prev_obese_men)) +
+  scale_fill_viridis_c(direction = -1, limits = c(0,78.5))+
+  theme_void()+  
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
   labs(title = "Prevalence of Abdominal Obesity in Men by District",fill = "Prevalence in % age")
 
+district_menplot
 
-menplot_districts
-
-
-ggsave("output_men.svg", plot = menplot_districts, device = "svg", width = 10, height = 8, units = "in")
-
+ggsave(here("Output","map_district_men.svg"), plot = district_menplot, device = "svg", width = 10, height = 8, units = "in")
 ```
-```{r, plotting womens district level estimates}
+
+```{r plotting womens district level estimates}
 # Create the static map using ggplot2
-womenplot_districts <- ggplot() + 
-  # geom_spatraster_rgb(data = basemap) +
+district_womenplot <- ggplot() + 
   geom_sf(data = underlay_map,aes(color ="No Data")) +
-  scale_color_manual("",values = c("No Data" = "black"),guide = guide_legend(override.aes = list(linetype = "solid", shape = NA))) +
-  geom_sf(data = merged_data_with_shape_sf, aes(fill = prev_obese_women)) +
-  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_women)))+
-  # scale_fill_ferwomenter(direction= +1, type = "seq")+
-    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
-  # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
-  theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  scale_color_manual("",values = c("No Data" = "black"),
+                     guide = guide_legend(override.aes = list(linetype = "solid", shape = NA))) +
+  geom_sf(data = district_merged_data_with_shape_sf, aes(fill = prev_obese_women)) +
+  scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
+  theme_void()+  
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
   labs(title = "Prevalence of Abdominal Obesity in women by District",fill = "Prevalence in % age")
 
+district_womenplot
 
-womenplot_districts
-
-
-ggsave("output_women.svg", plot = womenplot_districts, device = "svg", width = 10, height = 8, units = "in")
+ggsave(here("Output","map_district_women.svg"), plot = district_womenplot, device = "svg", width = 10, height = 8, units = "in")
 ```
 
+############
+#State
+############
 
+```{r merging men and womens state level estimates}
+state_merged_data_state <- merge(state_men, state_women, by = c("state"), suffixes = c("_men", "_women"))
 
-```{r, plotting interactive dashboard for mens district level estimates}
-custom_palette <- colorNumeric(palette = as.character(wes_palette("Zissou1",type = "continuous")), domain = merged_data_with_shape_sf$prev_obese_men,)
-
-# Create a leaflet map
-leaflet_map <- leaflet() %>%
-  # addProviderTiles("Esri.WorldGrayCanvas") %>%  # Add a basemap
-    addProviderTiles(provider = providers$Stamen.Watercolor) %>%
-
-  addPolygons(
-  data = underlay_map,
-  fill = TRUE,
-  fillColor = "grey",
-  fillOpacity = 1,
-  color = "black" ,           # Border color
-  popup = ~paste("No Data Available")) %>% 
-
-  # Add polygons layer with custom color and tooltip
-  addPolygons(data = merged_data_with_shape_sf,
-              fillColor = ~custom_palette(prev_obese_men),
-              fillOpacity = 1,
-              weight = 1,
-              color = "black",
-              popup = ~paste("State:" ,state, "District: ", district, "<br>Prevalence: ", prev_obese_men, "%" )) %>% 
-  # Add a legend
-  addLegend(
-    position = "bottomright",
-    pal = custom_palette,
-    values = merged_data_with_shape_sf$prev_obese_men,
-    title = "Prevalence"
-  )
-  
-
-
-leaflet_map
-```
-
-
-
-
-
-```{r, collapsing geometries by state}
-merged_data_with_shape_sf %>% group_by(state) %>% summarise() %>% plot()
-
-```
-
-```{r, overlaying stateshapefile over mens estimates}
-
-states <- geojson_sf("shapefiles/geoBoundaries-IND-ADM1_simplified.geojson")
-
-# Plot the India state boundaries
-menplot_districts + 
-  geom_sf(data = states, color = "black", fill = NA) 
-```
-```{r}
-
-men_state <- import(here("Output","men_state_obesity_prev_wc.xlsx"))
-women_state <- import(here("Output","women_state_obesity_prev_wc.xlsx"))
-
-```
-
-
-```{r, merging men and womens district level estimates}
-merged_data_state <- merge(men_state, women_state, by = c("state"), suffixes = c("_men", "_women"))
-```
-
-```{r}
+# correcting names in shape file
 states_corrected <- states %>%
   mutate(
     shapeName = case_when(
@@ -251,55 +163,45 @@ states_corrected <- states %>%
       shapeName == "Delhi" ~ "Nct of delhi",
       shapeName == "Madhya Pradesh" ~ "Madhya pradesh",
       shapeName == "Chandīgarh" ~ "Chandigarh",
-
+      
       # Add more corrections as needed
       TRUE ~ shapeName
     )
   )
-merged_data_with_state <- merge(merged_data_state, states_corrected, by.x = "state", by.y = "shapeName")
 
+state_merged_data_with_state <- merge(state_merged_data_state, states_corrected, by.x = "state", by.y = "shapeName")
+
+state_merged_data_with_shape_state_sf <- st_as_sf(state_merged_data_with_state)
 ```
 
-```{r}
-merged_data_with_shape_state_sf <- st_as_sf(merged_data_with_shape_state)
-
-```
-
-```{r}
-# Create the static map using ggplot2
-menplot_states <- ggplot() + 
-  # geom_spatraster_rgb(data = basemap) +
-  geom_sf(data = merged_data_with_shape_state_sf, aes(fill = prev_obese_men)) +
-  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_men)))+
-  # scale_fill_fermenter(direction= +1, type = "seq")+
-    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
-  # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
-  theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+```{r state plot for men}
+state_menplot <- ggplot() + 
+  geom_sf(data = state_merged_data_with_shape_state_sf, aes(fill = prev_obese_men)) +
+  scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
+  theme_void()+  
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
   labs(title = "Prevalence of Abdominal Obesity in Men by state",fill = "Prevalence in % age")
 
+state_menplot
 
-menplot_states
-
-ggsave("output_men_states.svg", plot = menplot_states, device = "svg", width = 10, height = 8, units = "in")
-
+ggsave(here("Output","map_state_men.svg"), plot = state_menplot, device = "svg", width = 10, height = 8, units = "in")
 ```
 
-```{r}
-# Create the static map using ggplot2
-womenplot_states <- ggplot() + 
-  # geom_spatraster_rgb(data = basemap) +
-  geom_sf(data = merged_data_with_shape_state_sf, aes(fill = prev_obese_women)) +
-  # scale_fill_distiller(palette = "Greens", direction = +1, limits = c(0,max(merged_data_with_shape_sf$prev_obese_women)))+
-  # scale_fill_ferwomenter(direction= +1, type = "seq")+
-    scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
-  # scale_fill_gra6dientn(colors = gradient_colors, limits = c(0,70)) +
-  theme_minimal()+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+```{r state plot for women}
+state_womenplot <- ggplot() + 
+  geom_sf(data = state_merged_data_with_shape_state_sf, aes(fill = prev_obese_women)) +
+  scale_fill_viridis_c( direction = -1, limits = c(0,78.5))+
+  theme_void()+
+  theme(
+    text = element_text(family = "Helvetica"),
+    title = element_text(family = "Helvetica", face = "bold"),
+    legend.title = element_text(family = "Helvetica"),
+    legend.text = element_text(family = "Helvetica")
+  )+
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
   labs(title = "Prevalence of Abdominal Obesity in women by state",fill = "Prevalence in % age")
 
+state_womenplot
 
-womenplot_states
-
-ggsave("output_women_states.svg", plot = womenplot_states, device = "svg", width = 10, height = 8, units = "in")
-
+ggsave(here("Output","map_state_women.svg"), plot = state_womenplot, device = "svg", width = 10, height = 8, units = "in")
 ```
-
