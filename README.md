@@ -1,18 +1,16 @@
+# NFHS Abdominal Obesity Analysis
 
-# NFHS_AbdominalObesity
-
-Welcome to the [Repository Name]! This README file provides instructions on setting up and using this repository with RStudio. The repository contains [brief description of the project or dataset].
-
-Code for Correspondence Article to this paper
-https://www.thelancet.com/journals/lansea/article/PIIS2772-3682(23)00068-9/fulltext#secsectitle0010
+Welcome to the NFHS Abdominal Obesity Analysis repository! This README provides comprehensive instructions for setting up and utilizing this repository within RStudio. The repository contains code and data related to a correspondence article to this paper: [Link to Correspondence Article](https://www.thelancet.com/journals/lansea/article/PIIS2772-3682(23)00068-9/fulltext#secsectitle0010).
 
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
    - [Clone the Repository](#clone-the-repository)
    - [Importing Data](#importing-data)
-2. [Running the Files](#running-the-files)
+2. [Running the Analysis](#running-the-analysis)
    - [Order of Execution](#order-of-execution)
+3. [Data Directory Structure](#data-directory-structure)
+4. [License](#license)
 
 ---
 
@@ -20,7 +18,7 @@ https://www.thelancet.com/journals/lansea/article/PIIS2772-3682(23)00068-9/fullt
 
 ### Clone the Repository
 
-To get started, you'll need to clone this repository using RStudio as a version-controlled project. Here are the steps:
+To begin, you'll need to clone this repository and set it up as a version-controlled project in RStudio. Please follow these steps:
 
 1. **Install R and RStudio**: If you haven't already, make sure you have R and RStudio installed on your machine. You can download them from the following links:
    - R: [Download R](https://cran.r-project.org/mirrors.html)
@@ -36,16 +34,27 @@ To get started, you'll need to clone this repository using RStudio as a version-
    - Choose a directory where you want to create your project.
    - Click "Create Project".
 
-   RStudio will now clone the repository and set it up as a project. You'll have the project files and environment ready for use.
+RStudio will clone the repository and set it up as a project, ensuring you have all the necessary files and environment ready for use.
 
 ### Importing Data
 
-Once you have the project set up, you can import the necessary data. Make sure the data files are placed in a directory within the project's root directory. 
+Once the project is set up, you'll need to import the essential data files. Ensure that the data files are placed in a directory within the project's root directory. Follow these steps:
 
-   1. Create a 'Data_raw' folder in the project directory.
-   2. Download the Household Members Recode, Individual Recode and Mens Recode STATA files from the DHSProgram website. The .rar files downloaded would be IAPR7EDT, IAIR7EDT and IAMR7EDT respectively. Extract the rar files such that there are corresponding folders for each rar file. you should have the following file structure.
+1. **Create a 'Data_raw' Folder**:
 
-  
+   - In your project directory, create a new folder named 'Data_raw'.
+
+2. **Download Data Files**:
+
+   - Download the Household Members Recode, Individual Recode, and Men's Recode STATA files from the [DHSProgram website](https://dhsprogram.com/). The files to download are IAPR7EDT, IAIR7EDT, and IAMR7EDT, respectively.
+
+3. **Extract Data Files**:
+
+   - Extract the downloaded .rar files in such a way that each .rar file corresponds to a separate folder within the 'Data_raw' directory.
+
+Here's the expected file structure:
+
+
   ```
 NFHS_AbdominalObesity
 ├───Data_clean
@@ -59,15 +68,28 @@ NFHS_AbdominalObesity
 └───Session info
 ```
 
-## Order of Execution
 
-Open each .Rmd file in the following order and run all chunks. It is recommended that the "Restart R and Run All Chunks" command be used to minimise risk of R Session being suspendend.
+## Running the Analysis
 
-   1. women.Rmd
-   2. men.Rmd
-   3. visualisations.Rmd
-   4. maps.Rmd
+To perform the analysis, follow these steps:
 
+1. **Execute R Markdown Files**:
+
+   - Open the following .Rmd files in RStudio:
+     - women.Rmd
+     - men.Rmd
+     - visualizations.Rmd
+     - maps.Rmd
+
+2. **Run All Chunks**:
+
+   - For each .Rmd file, run all code chunks. We recommend using the "Restart R and Run All Chunks" command to minimize the risk of R Session suspension.
+
+By following this order, you'll ensure that each file builds upon the results of the previous ones and that the project progresses as intended.
+
+## Data Directory Structure
+
+For a visual representation of the data directory structure, please refer to the [Data Directory Structure](#data-directory-structure) section above.
 
 Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
 
