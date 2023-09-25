@@ -198,17 +198,32 @@ state_menplot
 ggsave(here("Output","map_state_men.svg"), plot = state_menplot, device = "svg", width = 10, height = 8, units = "in")
 
 ####new code
-library(RColorBrewer)
+library(RColorBmerewer)
 state_menplot_cat <- ggplot() + 
   geom_sf(data = state_merged_data_with_shape_state_sf, aes(fill = cat_obese_men)) +
   scale_fill_brewer(palette = "Spectral", guide = "colorbar", direction = -1) +
   theme_void() +  
-  theme(legend.position = "right") +  # Adjust legend position
-  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  guides(fill = guide_colorbar(title.position = "right", title.hjust = 0.5)) +
   labs(title = "Prevalence of Abdominal Obesity in Men by state", fill = "Prevalence in % age")
 
 state_menplot_cat
 ```
+```{r}
+library(wesanderson)
+library(ggplot2)
+
+# Create a custom color palette using wes Anderson colors
+
+state_menplot_cat <- ggplot() + 
+  geom_sf(data = state_merged_data_with_shape_state_sf, aes(fill = cat_obese_men)) +
+  scale_fill_manual(values = met.brewer("Cassatt1",n = 5, direction =-1, "continuous")) +
+  theme_void() +  
+  labs(title = "Prevalence of Abdominal Obesity in Men by state", fill = "Prevalence in % age")
+
+state_menplot_cat
+
+```
+
 
 ```{r state plot for women}
 state_womenplot <- ggplot() + 
