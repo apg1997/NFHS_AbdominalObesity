@@ -40,18 +40,27 @@ To get started, you'll need to clone this repository using RStudio as a version-
 
 ### Importing Data
 
-Once you have the project set up, you can import the necessary data. Make sure the data files are placed in a directory within the project's root directory. Here are the steps to import data into RStudio:
+Once you have the project set up, you can import the necessary data. Make sure the data files are placed in a directory within the project's root directory. 
 
-1. In the RStudio Files pane (usually located in the bottom right), navigate to the directory where your data is located.
+   1. Create a 'Data_raw' folder in the project directory.
+   2. Download the Household Members Recode, Individual Recode and Mens Recode STATA files from the DHSProgram website. The .rar files downloaded would be IAPR7EDT, IAIR7EDT and IAMR7EDT respectively. Extract the rar files such that there are corresponding folders for each rar file. you should have the following file structure.
+   3. C:.
+├───4.maps_files
+│   └───figure-html
+├───Data_clean
+├───Data_raw
+│   ├───IAIR7EDT
+│   ├───IAMR7EDT
+│   ├───IAPR7EDT
+│   ├───sdr_subnational_boundaries_2023-08-21
+│   │   └───shps
+│   └───shapefile
+├───Output
+├───Session info
+└───shps
 
-2. To import data, you can use R's built-in functions or packages like `readr`, `readxl`, or any other package suitable for your data format. For example:
+   4. 
 
-   ```R
-   # Load the required package
-   library(readr)
-
-   # Import a CSV file named "data.csv"
-   data <- read_csv("data.csv")
 
 Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
 
