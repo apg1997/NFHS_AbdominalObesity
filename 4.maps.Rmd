@@ -171,6 +171,17 @@ states_corrected <- states %>%
 
 state_merged_data_with_state <- merge(state_merged_data_state, states_corrected, by.x = "state", by.y = "shapeName")
 
+state_merged_data_with_state <- state_merged_data_with_state %>%
+  mutate(cat_obese_men = cut(prev_obese_men, 
+                             breaks = c(-Inf, 10, 20, 30, 40, 50, 60, Inf), 
+                             labels = c("<10", "10-20", "20-30", "30-40", "40-50", "50-60", ">60"),
+                             right = FALSE),
+         cat_obese_women = cut(prev_obese_women, 
+                               breaks = c(-Inf, 10, 20, 30, 40, 50, 60, Inf), 
+                               labels = c("<10", "10-20", "20-30", "30-40", "40-50", "50-60", ">60"),
+                               right = FALSE)
+  )
+
 state_merged_data_with_shape_state_sf <- st_as_sf(state_merged_data_with_state)
 ```
 
@@ -185,6 +196,18 @@ state_menplot <- ggplot() +
 state_menplot
 
 ggsave(here("Output","map_state_men.svg"), plot = state_menplot, device = "svg", width = 10, height = 8, units = "in")
+
+####new code
+library(RColorBrewer)
+state_menplot_cat <- ggplot() + 
+  geom_sf(data = state_merged_data_with_shape_state_sf, aes(fill = cat_obese_men)) +
+  scale_fill_brewer(palette = "Spectral", guide = "colorbar", direction = -1) +
+  theme_void() +  
+  theme(legend.position = "right") +  # Adjust legend position
+  guides(fill = guide_colorbar(title.position = "top", title.hjust = 0.5)) +
+  labs(title = "Prevalence of Abdominal Obesity in Men by state", fill = "Prevalence in % age")
+
+state_menplot_cat
 ```
 
 ```{r state plot for women}
