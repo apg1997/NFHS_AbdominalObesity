@@ -44,9 +44,10 @@ Once you have the project set up, you can import the necessary data. Make sure t
 
    1. Create a 'Data_raw' folder in the project directory.
    2. Download the Household Members Recode, Individual Recode and Mens Recode STATA files from the DHSProgram website. The .rar files downloaded would be IAPR7EDT, IAIR7EDT and IAMR7EDT respectively. Extract the rar files such that there are corresponding folders for each rar file. you should have the following file structure.
-   3. C:.
-├───4.maps_files
-│   └───figure-html
+
+  
+  ```
+NFHS_AbdominalObesity
 ├───Data_clean
 ├───Data_raw
 │   ├───IAIR7EDT
@@ -54,12 +55,18 @@ Once you have the project set up, you can import the necessary data. Make sure t
 │   ├───IAPR7EDT
 │   ├───sdr_subnational_boundaries_2023-08-21
 │   │   └───shps
-│   └───shapefile
 ├───Output
-├───Session info
-└───shps
+└───Session info
+```
 
-   4. 
+## Order of Execution
+
+Open each .Rmd file in the following order and run all chunks. It is recommended that the "Restart R and Run All Chunks" command be used to minimise risk of R Session being suspendend.
+
+   1. women.Rmd
+   2. men.Rmd
+   3. visualisations.Rmd
+   4. maps.Rmd
 
 
 Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
