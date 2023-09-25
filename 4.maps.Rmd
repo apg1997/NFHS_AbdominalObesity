@@ -19,7 +19,7 @@ district_shapefile <- sf::st_read(here("Data_raw","sdr_subnational_boundaries_20
 # background map of India with correct geography
 underlay_map <- st_read(here("Data_raw","shapefile","india-composite.geojson"))
 # map with state boundaries
-states <- geojson_sf("shapefiles/geoBoundaries-IND-ADM1_simplified.geojson")
+states <- geojson_sf("Data_raw/shapefile/geoBoundaries-IND-ADM1_simplified.geojson")
 ```
 
 ```{r importing obesity estimates}
