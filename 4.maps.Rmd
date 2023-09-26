@@ -8,7 +8,7 @@ date: "`r Sys.Date()`"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-p_load(tidyverse, rio, janitor, here, geojsonio, ggmap, ggthemes, maptiles, MetBrewer, sf, tidyterra, svglite)
+p_load(tidyverse, rio, janitor, here, geojsonio, ggmap, ggthemes, maptiles, MetBrewer, sf, tidyterra, svglite,ggpattern)
 ```
 
 ```{r loading  shapefile, include=FALSE}
@@ -129,17 +129,36 @@ ggsave(here("Output","map_district_women.svg"), plot = district_womenplot, devic
 
 # Alternate map: abdominal obesity category
 district_womenplot_cat <- ggplot() + 
-  geom_sf(data = underlay_map,aes(color ="No Data")) +
-  scale_color_manual("",values = c("No Data" = "black"),
+  geom_sf_pattern(data = underlay_map, aes(fill = "No Data"), pattern = 'stripe') +
+  scale_fill_manual("", values = c("No Data" = "black"),
                      guide = guide_legend(override.aes = list(linetype = "solid", shape = NA))) +
   geom_sf(data = district_merged_data_with_shape_sf, aes(fill = cat_obese_women)) +
   scale_fill_manual(values = color_palette) +
-  theme_void()+  
-  labs(title = "Prevalence of Abdominal Obesity in women by District",fill = "Prevalence in % age")
+  theme_void() +  
+  labs(title = "Prevalence of Abdominal Obesity in women by District", fill = "Prevalence in % age")
 
 district_womenplot_cat
 
 ggsave(here("Output","map_district_women_cat.svg"), plot = district_womenplot_cat, device = "svg", width = 10, height = 8, units = "in")
+```
+```{r}
+# Load the required libraries
+library(ggplot2)
+library(ggpattern)
+
+# Create the plot with striped fill for the underlay map
+district_womenplot_cat <- ggplot() + 
+  geom_sf_pattern(data = underlay_map, aes(fill = "No Data"), pattern = 'stripe') +
+  scale_fill_manual("", values = c("No Data" = "black"),
+                     guide = guide_legend(override.aes = list(linetype = "solid", shape = NA))) +
+  geom_sf(data = district_merged_data_with_shape_sf, aes(fill = cat_obese_women)) +
+  scale_fill_manual(values = color_palette) +
+  theme_void() +  
+  labs(title = "Prevalence of Abdominal Obesity in women by District", fill = "Prevalence in % age")
+
+district_womenplot_cat
+
+
 ```
 
 ############
