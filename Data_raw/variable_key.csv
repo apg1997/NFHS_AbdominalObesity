@@ -1,0 +1,18 @@
+Variable,Household Recode (PR),Men's Recode (MR),Women's Recode (IR)
+Sample weight,hv005,mv005,v005
+State,hv024,mv024,v024
+District,shdist,smdist,sdist
+Age,hv105,mv012,v012
+Place of Residence,hv025,mv025,v025
+Level of Education ,hv106,mv106,v106
+Religion,sh47,mv130,mv130
+Caste/Tribe,sh49,sm118,s116
+Wealth Index,hv270,mv190,v190
+Type of Diet,-,sm630g,s731g
+Currently Pregnant,-,-,v213
+Post-Partum,-,-,v208
+Current age of child,-,-,b19_01
+Body Mass Index,-,hb40 (hv208 sample weight) in PR,v445
+Weight,-,hb2 (hv208 sample weight) in PR,v437
+Height,-,hb3 (hv208 sample weight) in PR,v438
+Waist circumference,sh305,smb305,s305

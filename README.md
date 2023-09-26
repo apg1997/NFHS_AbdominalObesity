@@ -75,6 +75,7 @@ To perform the analysis, follow these steps:
 
 1. **Execute R Markdown Files**:
 
+   - The variables used can be seen in Data_raw/variable_key.csv.
    - Open the following .Rmd files in RStudio:
      - women.Rmd
      - men.Rmd
