@@ -92,7 +92,7 @@ By following this order, you'll ensure that each file builds upon the results of
 
 For a visual representation of the data directory structure, please refer to the [Data Directory Structure](#data-directory-structure) section above.
 
-Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
+[![CC BY 4.0][cc-by-shield]][cc-by]
 
 This work is licensed under a
 [Creative Commons Attribution 4.0 International License][cc-by].
