@@ -1,6 +1,6 @@
 # NFHS Abdominal Obesity Analysis
 
-Welcome to the NFHS Abdominal Obesity Analysis repository! This README provides comprehensive instructions for setting up and utilizing this repository within RStudio. The repository contains code and data related to a correspondence article to this paper: [Link to Correspondence Article](https://www.thelancet.com/journals/lansea/article/PIIS2772-3682(23)00068-9/fulltext#secsectitle0010).
+Welcome to the NFHS Abdominal Obesity Analysis repository! This README provides comprehensive instructions for setting up and utilizing this repository within RStudio. The repository contains code and data related to a correspondence article to this paper: [Link to Correspondence Article](https://www.thelancet.com/journals/lansea/article/PIIS2772-3682(23)00068-9/fulltext).
 
 ## Table of Contents
 
@@ -9,8 +9,7 @@ Welcome to the NFHS Abdominal Obesity Analysis repository! This README provides 
    - [Importing Data](#importing-data)
 2. [Running the Analysis](#running-the-analysis)
    - [Order of Execution](#order-of-execution)
-3. [Data Directory Structure](#data-directory-structure)
-4. [License](#license)
+3. [License](#license)
 
 ---
 
@@ -46,7 +45,7 @@ Once the project is set up, you'll need to import the essential data files. Ensu
 
 2. **Download Data Files**:
 
-   - Download the Household Members Recode, Individual Recode, and Men's Recode STATA files from the [DHSProgram website](https://dhsprogram.com/). The files to download are IAPR7EDT, IAIR7EDT, and IAMR7EDT, respectively.
+   - Download the Household Members Recode, Individual Recode, and Men's Recode STATA files from the [DHSProgram website](https://dhsprogram.com/data/dataset/India_Standard-DHS_2020.cfm?flag=1). The files to download are IAPR7EDT, IAIR7EDT, and IAMR7EDT, respectively.
 
 3. **Extract Data Files**:
 
@@ -88,10 +87,7 @@ To perform the analysis, follow these steps:
 
 By following this order, you'll ensure that each file builds upon the results of the previous ones and that the project progresses as intended.
 
-## Data Directory Structure
-
-For a visual representation of the data directory structure, please refer to the [Data Directory Structure](#data-directory-structure) section above.
-
+## License
 [![CC BY 4.0][cc-by-shield]][cc-by]
 
 This work is licensed under a
