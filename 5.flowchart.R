@@ -1,9 +1,12 @@
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
 pacman::p_load(DiagrammeR, grid, here, DiagrammeRsvg, rsvg)
 
+# The output Rdata objects be imported. However, these large files can be challenging to work with.
 # Importing the data and retaining only row_counts dataframes
-load(here("Output","men_output.Rdata"));load(here("Output","women_output.Rdata"))
-rm(list = setdiff(ls(), grep("row_counts", ls(), value = TRUE)))
+# load(here("Output","men_output.Rdata"));load(here("Output","women_output.Rdata"))
+# rm(list = setdiff(ls(), grep("row_counts", ls(), value = TRUE)))
+
+# The alternate is to run the Men and Women code separately after running the 1.women.Rmd and 2.men.Rmd
 
 #################
 # Men flowchart #
