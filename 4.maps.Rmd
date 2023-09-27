@@ -32,7 +32,7 @@ district_women <- import(here("Output","women_dist_obesity_prev_wc.xlsx"))
 
 ```{r color palette}
 # met.brewer(name="Demuth", n=7, type="discrete", direction = -1)
-color_palette <- c("<10" = "#41485f", "10-20" = "#5d6174", "20-30" = "#b9b9b8", "30-40" = "#f7c267", 
+color_palette <- c("<10" = "#41485f", "10-20" = "#6e8291", "20-30" = "#5d6174", "30-40" = "#f7c267", 
                    "40-50" = "#d39a2d", "50-60" = "#b64f32", ">60" = "#9b332b")
 ```
 
