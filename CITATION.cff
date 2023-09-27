@@ -1,0 +1,14 @@
+cff-version: 1.0
+message: "If you use this replication code, please cite it as below."
+authors:
+- family-names: "Gun"
+  given-names: "Arkaprabha"
+  orcid: "https://orcid.org/0000-0001-9166-8361"
+- family-names: "Garg"
+  given-names: "Tushar"
+  orcid: "https://orcid.org/0000-0000-0000-0000" ## ADD orcid ID
+title: "Replication Code for NFHS-5 Abdominal Obesity Analysis"
+version: 1.0.0
+doi:                                 ## to be updated
+date-released: 2023-09-28            ## to be updated
+url: "https://github.com/apg1997/NFHS_AbdominalObesity"
