@@ -8,7 +8,7 @@ date: "`r Sys.Date()`"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-p_load(tidyverse, rio, janitor, here, geojsonio, ggmap, ggthemes, maptiles, MetBrewer, sf, tidyterra, svglite)
+p_load(tidyverse, rio, janitor, here, geojsonio, ggmap, ggthemes, maptiles, MetBrewer, sf, tidyterra, svglite, sessioninfo)
 ```
 
 ```{r loading  shapefile, include=FALSE}
@@ -253,4 +253,8 @@ state_womenplot_cat <- ggplot() +
 state_womenplot_cat
 
 ggsave(here("Output","map_state_women_cat.svg"), plot = state_womenplot_cat, device = "svg", width = 10, height = 8, units = "in")
+```
+
+```{r session info}
+sessioninfo::session_info(pkgs = c("loaded", "attached")[1], to_file = here("Session info","session_info_maps.txt"))
 ```

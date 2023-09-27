@@ -1,5 +1,5 @@
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-pacman::p_load(DiagrammeR, grid, here, DiagrammeRsvg, rsvg)
+pacman::p_load(sessioninfo, DiagrammeR, grid, here, DiagrammeRsvg, rsvg)
 
 # The output Rdata objects be imported. However, these large files can be challenging to work with.
 # Importing the data and retaining only row_counts dataframes
@@ -92,4 +92,8 @@ grViz(women_dot_code) %>%
   export_svg() %>% 
   charToRaw() %>%
   rsvg::rsvg_pdf(here("Output", "flowchart_women.pdf"))
+
+
+sessioninfo::session_info(pkgs = c("loaded", "attached")[1], to_file = here("Session info","session_info_flowchart.txt"))
+
 
