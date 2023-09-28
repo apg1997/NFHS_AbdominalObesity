@@ -90,6 +90,12 @@ To perform the analysis, follow these steps:
 
 By following this order, you'll ensure that each file builds upon the results of the previous ones and that the project progresses as intended.
 
+## Outputs
+##Maps
+### Flowcharts
+## Forestplots
+## Models
+
 ## 🔐License
 [![CC BY 4.0][cc-by-shield]][cc-by]
 
