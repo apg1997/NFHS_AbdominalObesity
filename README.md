@@ -67,7 +67,8 @@ NFHS_AbdominalObesity
 ├───Output
 └───Session info
 ```
-
+The Output directory is the location for exporting output from running the R Markdown and Scripts files.
+The Session info folder contains details regarding the packages used in the code, as well as the locations of the files corresponding to the packages.
 
 ## 📈 Running the Analysis
 
@@ -81,12 +82,19 @@ To perform the analysis, follow these steps:
      - men.Rmd
      - visualizations.Rmd
      - maps.Rmd
+     - flowcharts.R
 
 2. 🏃️**Run All Chunks**:
 
    - For each .Rmd file, run all code chunks. We recommend using the "Restart R and Run All Chunks" command to minimize the risk of R Session suspension.
 
 By following this order, you'll ensure that each file builds upon the results of the previous ones and that the project progresses as intended.
+
+## Outputs
+##Maps
+### Flowcharts
+## Forestplots
+## Models
 
 ## 🔐License
 [![CC BY 4.0][cc-by-shield]][cc-by]

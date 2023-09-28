@@ -224,7 +224,7 @@ men_prev_wc <- tbl_svysummary(NFHS5_design, by = obese_wtcircum,
                               percent = "row") %>% 
   add_ci(pattern = "{stat} [{ci}]",
          #for religion, try "svyprop.logit" when using full data
-         method = religion ~ "svyprop.beta") %>% 
+         ) %>% 
   add_overall(last = TRUE,
               statistic = ~"{n}")
 
@@ -235,7 +235,7 @@ men_prev_bmi <- tbl_svysummary(NFHS5_design, by = obese_bmi,
                                percent = "row") %>% 
   add_ci(pattern = "{stat} [{ci}]",
          #for religion, try "svyprop.logit" when using full data
-         method = religion ~ "svyprop.beta") %>% 
+        ) %>% 
   add_overall(last = TRUE,
               statistic = ~"{n}")
 

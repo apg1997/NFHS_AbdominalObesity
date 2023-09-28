@@ -24,4 +24,7 @@
 #Variable key
 !Data_raw/variable_key.csv
 
+# session inff
+!Session\ info/*.txt
+
 .Rproj.user
