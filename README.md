@@ -92,7 +92,7 @@ By following this order, you'll ensure that each file builds upon the results of
 
 ## Outputs
 ### Maps
-[state-level-prevalence-maps]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
+[state-level-prevalence-maps]: https://github.com/apg1997/NFHS_AbdominalObesity/blob/f85229bdb7f9a55211e26e1316011152a488e3ee/Figures/Map1.svg
 
 ### Flowcharts
 ### Forestplots
