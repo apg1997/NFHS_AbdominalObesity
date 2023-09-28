@@ -1,4 +1,4 @@
-# Abdominal Obesity in India 🇮🇳
+![Map1](https://github.com/apg1997/NFHS_AbdominalObesity/assets/63815811/0add6265-199c-445c-9037-e16e1cc103b3)# Abdominal Obesity in India 🇮🇳
 
 🚀 This README provides comprehensive instructions for setting up and utilizing this repository within RStudio. The repository contains code and data related to a correspondence article to this paper: [Link to Correspondence Article](https://www.thelancet.com/journals/lansea/article/PIIS2772-3682(23)00068-9/fulltext).
 
@@ -91,10 +91,12 @@ To perform the analysis, follow these steps:
 By following this order, you'll ensure that each file builds upon the results of the previous ones and that the project progresses as intended.
 
 ## Outputs
-##Maps
+### Maps
+[state-level-prevalence-maps]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
+
 ### Flowcharts
-## Forestplots
-## Models
+### Forestplots
+### Models
 
 ## 🔐License
 [![CC BY 4.0][cc-by-shield]][cc-by]

@@ -26,5 +26,6 @@
 
 # session inff
 !Session\ info/*.txt
+!Figures/*.svg
 
 .Rproj.user
