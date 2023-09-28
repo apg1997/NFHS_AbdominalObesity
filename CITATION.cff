@@ -1,13 +1,13 @@
 cff-version: 1.2.0
-message: "If you use this replication code, please cite it as below."
+message: "Please cite this code if you use it in your research, this will help us track the impact of our work."
 authors:
 - family-names: "Gun"
   given-names: "Arkaprabha"
   orcid: "https://orcid.org/0000-0001-9166-8361"
 - family-names: "Garg"
   given-names: "Tushar"
-  orcid: "https://orcid.org/0000-0000-0000-0000"  
-title: "Replication Code for NFHS-5 Abdominal Obesity Analysis"
+  orcid: "https://orcid.org/0000-0002-6781-8574"  
+title: "NFHS-5 Abdominal Obesity Analysis Code"
 version: 1.0.0
 doi:                                  
 date-released: 2023-09-28             
