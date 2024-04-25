@@ -15,6 +15,23 @@ pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,label
 load(here("Output","men_output_viz.Rdata"));load(here("Output","women_output_viz.Rdata"))
 ```
 
+```{r original paper data}
+# Importing the prevalnce and model estiamtes tables from the originsal paper by Chaudhary et al
+orig_prev <- import(here("Data_raw","original paper data_chaudhary.xlsx"), which = "prevalence")
+orig_model <- import(here("Data_raw","original paper data_chaudhary.xlsx"), which = "model")
+
+# Cleaning and aligning the table for the forest plot
+orig_prev <- orig_prev %>%
+  extract("Women-WC", into = c("orig_prop_Obese_wc_women", "orig_low_ci_Obese_wc_women", "orig_high_ci_Obese_wc_women"),
+          regex = "([0-9.]+)\\(([0-9.]+)\\–([0-9.]+)\\)", remove = FALSE) %>%
+  extract("Women-BMI", into = c("orig_prop_Obese_bmi_women", "orig_low_ci_Obese_bmi_women", "orig_high_ci_Obese_bmi_women"),
+          regex = "([0-9.]+)\\(([0-9.]+)\\–([0-9.]+)\\)", remove = FALSE) %>%
+  extract("Men-WC", into = c("orig_prop_Obese_wc_men", "orig_low_ci_Obese_wc_men", "orig_high_ci_Obese_wc_men"),
+          regex = "([0-9.]+)\\(([0-9.]+)\\–([0-9.]+)\\)", remove = FALSE) %>%
+  extract("Men-BMI", into = c("orig_prop_Obese_bmi_men", "orig_low_ci_Obese_bmi_men", "orig_high_ci_Obese_bmi_men"),
+          regex = "([0-9.]+)\\(([0-9.]+)\\–([0-9.]+)\\)", remove = FALSE)
+```
+
 ```{r prevalence}
 process_prev <- function(data, data_wc, data_bmi, gender) {
   
@@ -190,6 +207,122 @@ fig_prev_plot <- forest(fig_prev[,c(1, 16, 18, 17, 19)],
 ggplot2::ggsave(filename = here("Output", "fig_prev_plot.svg"), plot = fig_prev_plot,
                 dpi = 300, width = 8.3, height = 13.6, units = "in")
 ```
+
+```{r prevalence figure with original estimates}
+orig_prev$Characteristic <- ifelse(orig_prev$Characteristic %in% indent_check, orig_prev$Characteristic,
+                                  paste0("     ", orig_prev$Characteristic))
+
+fig_prev2 <- fig_prev %>%
+  left_join(orig_prev %>% select(Characteristic, starts_with("orig_")), by = "Characteristic") %>% 
+  mutate(across(starts_with("orig_"), ~ as.numeric(.) / 100)) %>% 
+  select(-(starts_with("orig_") & contains("bmi")))
+
+theme_prev1 <- forest_theme(base_size = 13,
+                            base_family = "Helevetica",
+                            refline_lwd = 0,
+                            refline_lty = "solid",
+                            ci_pch = c(2, 1, 2),
+                            ci_lty = c("solid","solid","solid"),
+                            ci_col = c("#8D0522","#034762","#AF5064"),
+                            ci_lwd = c(1.3,0.85,0.65),
+                            ci_Theight = NULL,
+                            footnote_col = "blue",
+                            legend_name = "Criterion",
+                            legend_value = c(" Waist circumference   ", " Body mass index", ""),
+                            legend_position = "bottom",
+                            vertline_lty = c("dashed"),
+                            vertline_lwd = 1,
+                            vertline_col = c("#7ABA69"),
+                            colhead=list(fg_params=list(
+                              hjust=c(0.83, 0.5, 0.5, 0.5, 0.5),
+                              x=0.5, parse=T)),
+                            core = list(padding = unit(c(0,5), "mm")) 
+                            )
+
+fig_prev_plot2 <- forest(
+  fig_prev2[, c(1, 16, 18, 17, 19)],
+  est = list(
+    fig_prev2$prop_Obese_wc_women,
+    fig_prev2$prop_Obese_wc_men,
+    fig_prev2$prop_Obese_bmi_women,
+    fig_prev2$prop_Obese_bmi_men,
+    fig_prev2$orig_prop_Obese_wc_women,  # original estimates
+    fig_prev2$orig_prop_Obese_wc_men
+    # ,
+    # fig_prev2$orig_prop_Obese_bmi_women,
+    # fig_prev2$orig_prop_Obese_bmi_men
+  ),
+  lower = list(
+    fig_prev2$low_ci_Obese_wc_women,
+    fig_prev2$low_ci_Obese_wc_men,
+    fig_prev2$low_ci_Obese_bmi_women,
+    fig_prev2$low_ci_Obese_bmi_men,
+    fig_prev2$orig_low_ci_Obese_wc_women,  # original confidence intervals
+    fig_prev2$orig_low_ci_Obese_wc_men
+    # ,
+    # fig_prev2$orig_low_ci_Obese_bmi_women,
+    # fig_prev2$orig_low_ci_Obese_bmi_men
+  ), 
+  upper = list(
+    fig_prev2$high_ci_Obese_wc_women,
+    fig_prev2$high_ci_Obese_wc_men,
+    fig_prev2$high_ci_Obese_bmi_women,
+    fig_prev2$high_ci_Obese_bmi_men,
+    fig_prev2$orig_high_ci_Obese_wc_women,  # original confidence intervals
+    fig_prev2$orig_high_ci_Obese_wc_men
+    # ,
+    # fig_prev2$orig_high_ci_Obese_bmi_women,
+    # fig_prev2$orig_high_ci_Obese_bmi_men
+  ), 
+  ci_column = c(3, 5),
+  xlim = list(c(0, 1), c(0, 1)),
+  xlab = c(""),
+  ticks_at = list(c(0, 0.25, 0.5, 0.75, 1),c(0, 0.25, 0.5, 0.75, 1)),
+  vert_line = list(c(fig_prev2$prop_Obese_wc_women[fig_prev2$Characteristic == "Overall"]), 
+                   c(fig_prev2$prop_Obese_wc_men[fig_prev2$Characteristic == "Overall"])),
+  nudge_y = 0.25,
+  theme = theme_prev1
+) %>%  # bold category heading
+  edit_plot(row = c(1,2,6,9,14,22,28,34),
+            gp = gpar(fontface = "bold")) %>%
+  # right aligned numbers
+  edit_plot(col = c(2,3,4,5), which = "text",
+            hjust = unit(1, "npc"), 
+            x = unit(0.9, "npc")) %>% 
+  # all background white
+  edit_plot(row = c(1:42), which = "background",
+            gp = gpar(fill = "white")) %>% 
+  # background to category headings
+  edit_plot(row = c(1,2,6,9,14,22,28,34), which = "background",
+            gp = gpar(fill = "lightgray")) %>% 
+  # background to overall row
+  edit_plot(col = 1:5, row = 1, which = "background", 
+            gp = gpar(fill = "#f6eff7")) %>%
+  # header join: women and men
+  insert_text(text = "Women",col = 2:3,part = "header",
+              gp = gpar(fontface = "bold")) %>%
+  add_text(text = "Men",col = 4:5,part = "header",row = 1,
+           gp = gpar(fontface = "bold")) %>%
+  edit_plot(part = "header", row = 2,
+            gp = gpar(fontface = "bold")) %>% 
+  
+  # top border for table
+  add_border(part = "header", row = 1, where = "top",
+             gp = gpar(lwd = .7)) %>% 
+  # bottom border for header
+  add_border(part = "header", row = 2, where = "bottom",
+             gp = gpar(lwd = .7)) %>% 
+  # border for women header
+  add_border(part = "header", row = 1, col = 2:3,
+             gp = gpar(lwd = 0.8)) %>% 
+  # border for men header
+  add_border(part = "header", row = 1, col = 4:5,
+             gp = gpar(lwd = 0.8))
+
+ggplot2::ggsave(filename = here("Output", "fig_prev_plot2.svg"), plot = fig_prev_plot2,
+                dpi = 300, width = 8.3, height = 13.6, units = "in")
+```
+
 
 ```{r model}
 process_model <- function(data, gender_suffix, model_suffix) {
