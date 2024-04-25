@@ -21,10 +21,17 @@
 !Data_raw/shapefile/*.geojson
 !Data_raw/sdr_subnational_boundaries_2023-08-21/shps/sdr_subnational_boundaries2.*
 
+# Tables from original paper
+!Data_raw/original\ paper\ data_chaudhary.xlsx
+
+# Intermediate output generated from 1.women.Rmd and 2.men.Rmd
+!Output/men_output_viz.Rdata
+!Output/women_output_viz.Rdata
+
 #Variable key
 !Data_raw/variable_key.csv
 
-# session inff
+# session inf0
 !Session\ info/*.txt
 !Figures/*.svg
 
