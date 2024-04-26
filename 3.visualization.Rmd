@@ -8,7 +8,7 @@ date: "`r Sys.Date()`"
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo=F,message=F, warning=F)
 suppressMessages(if (!require("pacman")) install.packages("pacman"))
-pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools,forestploter)
+pacman::p_load(tidyverse,lubridate,rio,janitor,here,gtsummary,survey,haven,labelled,sjlabelled,performance,jtools,forestploter,svglite)
 ```
 
 ```{r import}
@@ -320,7 +320,7 @@ fig_prev_plot2 <- forest(
              gp = gpar(lwd = 0.8))
 
 ggplot2::ggsave(filename = here("Output", "fig_prev_plot2.svg"), plot = fig_prev_plot2,
-                dpi = 300, width = 8.3, height = 13.6, units = "in")
+                dpi = 300, width = 8.3, height = 14, units = "in")
 ```
 
 
