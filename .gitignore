@@ -4,6 +4,9 @@
 # Git and Gitignore
 !.gitignore
 
+# Motivation
+!Motivation\ for\ reproducing\ analysis.pdf
+
 # Don't ignore directories
 !*/
 
