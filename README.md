@@ -2,6 +2,7 @@
 
 🚀 This README provides comprehensive instructions for setting up and utilizing this repository within RStudio. The repository contains code and data related to a correspondence article to the following paper: [Chaudhary M, Sharma P. Abdominal obesity in India: analysis of the National Family Health Survey-5 (2019–2021) data. The Lancet Regional Health - Southeast Asia 2023; 14: 100208.](https://www.thelancet.com/journals/lansea/article/PIIS2772-3682(23)00068-9/fulltext).  
 
+🔥 The motivation for reproducing the analysis is presented [here.](https://github.com/apg1997/NFHS_AbdominalObesity/blob/main/Motivation%20for%20reproducing%20analysis.pdf)
 
 ## 📜 Table of Contents
 
